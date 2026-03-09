@@ -874,7 +874,13 @@ ${contractText.slice(0, 4000)}
   const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhuaGZianVlZGVzbWt4cm1tZmFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA5MjM0ODEsImV4cCI6MjA1NjQ5OTQ4MX0.eyJpc3MiOiJzdXBhYmFzZSJ9'; // cole sua anon key aqui
   const ALLOWED_DOMAIN = '@barburcarneiro.com.br';
 
-  const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
+    auth: {
+      persistSession: false,      // não salva sessão no navegador
+      autoRefreshToken: false,    // não renova token automaticamente
+      detectSessionInUrl: true    // ainda processa o callback do Google OAuth
+    }
+  });
 
   function showLogin()  {
     document.getElementById('loginScreen').style.display = 'flex';
