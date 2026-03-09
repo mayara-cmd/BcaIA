@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BCA | Assistente Jurídico</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root {
     --black:        #0a0a0a;
@@ -878,21 +877,13 @@ ${contractText.slice(0, 4000)}
   });
 
   // ══════════════════════════════════════════════
-  // SUPABASE AUTH
+  // AUTH — sem Supabase SDK, JWT puro
   // ══════════════════════════════════════════════
-  const SUPABASE_URL  = 'https://hnhfbjuedesmkxrmmfan.supabase.co';
-  const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhuaGZianVlZGVzbWt4cm1tZmFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5OTcwMzYsImV4cCI6MjA4ODU3MzAzNn0.MemLsn-_uLOlo7YpK0u7ulRxuvMVHMIUJyKNv20jocY'; // cole sua anon key aqui
+  const SUPABASE_URL   = 'https://hnhfbjuedesmkxrmmfan.supabase.co';
+  const SUPABASE_ANON  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhuaGZianVlZGVzbWt4cm1tZmFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5OTcwMzYsImV4cCI6MjA4ODU3MzAzNn0.MemLsn-_uLOlo7YpK0u7ulRxuvMVHMIUJyKNv20jocY';
   const ALLOWED_DOMAIN = '@barburcarneiro.com.br';
 
-  const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
-    auth: {
-      persistSession: false,      // não salva sessão no navegador
-      autoRefreshToken: false,    // não renova token automaticamente
-      detectSessionInUrl: true    // ainda processa o callback do Google OAuth
-    }
-  });
-
-  function showLogin()  {
+  function showLogin() {
     document.getElementById('loginScreen').style.display = 'flex';
     document.getElementById('appContent').style.display  = 'none';
   }
@@ -913,75 +904,52 @@ ${contractText.slice(0, 4000)}
     document.getElementById('loginBtn').style.display = 'flex';
   }
 
-  async function loginWithGoogle() {
-    document.getElementById('loginBtn').style.display    = 'none';
-    document.getElementById('loginLoading').style.display = 'block';
-    document.getElementById('loginError').style.display  = 'none';
-
-    const { error } = await _supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        // For local file: use the Supabase callback URL
-        // After publishing online, change this to your actual URL
-        redirectTo: 'https://mayara-cmd.github.io/BcaIA/'
-      }
-    });
-
-    if (error) showLoginError('Erro ao iniciar login: ' + error.message);
-  }
-
-  async function logout() {
-    await _supabase.auth.signOut();
-    showLogin();
-  }
-
   function checkDomain(email) {
     return email && email.toLowerCase().endsWith(ALLOWED_DOMAIN);
   }
 
-  // On page load
-  async function initAuth() {
-    const hash = window.location.hash;
+  // Redireciona para Google OAuth via Supabase (sem SDK)
+  function loginWithGoogle() {
+    document.getElementById('loginBtn').style.display     = 'none';
+    document.getElementById('loginLoading').style.display = 'block';
+    document.getElementById('loginError').style.display   = 'none';
+    const redirectTo = encodeURIComponent('https://mayara-cmd.github.io/BcaIA/');
+    window.location.href = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${redirectTo}`;
+  }
 
+  function logout() {
+    window._authToken = null;
+    showLogin();
+  }
+
+  // Processa token ao voltar do OAuth
+  function initAuth() {
+    const hash = window.location.hash;
     if (hash.includes('access_token')) {
       try {
         const params      = new URLSearchParams(hash.substring(1));
         const accessToken = params.get('access_token');
-
-        // Limpa hash da URL imediatamente
         history.replaceState(null, '', window.location.pathname);
-
-        // Decodifica JWT sem chamar nenhuma API
-        const parts   = accessToken.split('.');
-        const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+        const b64     = accessToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+        const payload = JSON.parse(atob(b64));
         const email   = payload?.email || payload?.user_metadata?.email;
-
-        if (!email) {
-          showLogin();
-          showLoginError('Não foi possível identificar o e-mail da conta Google.');
-          return;
-        }
-
+        if (!email) { showLogin(); showLoginError('Não foi possível identificar o e-mail.'); return; }
         if (checkDomain(email)) {
-          // Armazena token em memória para usar nas chamadas da API
           window._authToken = accessToken;
           showApp({ email });
         } else {
           showLogin();
           showLoginError(`⛔ Acesso negado. Apenas contas ${ALLOWED_DOMAIN} têm permissão.\nVocê tentou entrar com: ${email}`);
         }
-
       } catch (err) {
         showLogin();
         showLoginError('Erro ao processar login: ' + err.message);
       }
       return;
     }
-
     showLogin();
   }
 
-  // Boot
   initAuth();
 </script>
 </div><!-- /appContent -->
