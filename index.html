@@ -300,7 +300,9 @@
   </div>
   <div class="privacy-badge">
     <div class="pdot"></div>
-    <span id="userEmail">IA Local · Dados Privados</span>
+    <span id="llmStatus" style="font-size:0.7rem;">⏳ Verificando IA...</span>
+    &nbsp;·&nbsp;
+    <span id="userEmail" style="font-size:0.7rem;">—</span>
     <button onclick="logout()" style="
       margin-left:0.75rem;background:none;border:1px solid #333;
       color:var(--email-dark);border-radius:5px;padding:0.25rem 0.6rem;
@@ -515,6 +517,25 @@
   const API_KEY   = 'MQA8ZGK-4AE4EYV-Q5F3Y05-V8CY281';
   const WORKSPACE = 'meu-workspace';
   const API_BASE  = 'http://localhost:3001/api/v1';
+
+  // Testa conexão com AnythingLLM ao carregar
+  async function checkAnythingLLM() {
+    try {
+      const res = await fetch(`${API_BASE}/auth`, {
+        headers: { 'Authorization': `Bearer ${API_KEY}` },
+        signal: AbortSignal.timeout(3000)
+      });
+      if (res.ok) {
+        document.getElementById('llmStatus').innerHTML = '🟢 &nbsp;IA Conectada';
+        document.getElementById('llmStatus').style.color = '#7ab87a';
+      } else { setOffline(); }
+    } catch { setOffline(); }
+  }
+
+  function setOffline() {
+    document.getElementById('llmStatus').innerHTML = '🔴 &nbsp;IA Offline — abra o AnythingLLM no computador';
+    document.getElementById('llmStatus').style.color = '#d07a7a';
+  }
 
   // ── NAV ──────────────────────────────────────────────
   function switchPanel(p) {
@@ -863,11 +884,9 @@ ${contractText.slice(0, 4000)}
   function showApp(user) {
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('appContent').style.display  = 'flex';
-    // Show user email in topbar
     const emailEl = document.getElementById('userEmail');
-    if (emailEl && user?.email) {
-      emailEl.textContent = user.email;
-    }
+    if (emailEl && user?.email) emailEl.textContent = user.email;
+    checkAnythingLLM();
   }
 
   function showLoginError(msg) {
@@ -888,7 +907,7 @@ ${contractText.slice(0, 4000)}
       options: {
         // For local file: use the Supabase callback URL
         // After publishing online, change this to your actual URL
-        redirectTo: window.location.href
+        redirectTo: 'https://mayara-cmd.github.io/LLMBca/'
       }
     });
 
