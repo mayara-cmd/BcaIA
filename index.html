@@ -956,56 +956,40 @@ ${contractText.slice(0, 4000)}
   // On page load: check if user is already logged in
   async function initAuth() {
 
-    // Captura token do hash da URL após redirect OAuth
-    if (window.location.hash.includes('access_token')) {
-      const { data, error } = await _supabase.auth.getSession();
-      if (data?.session?.user) {
-        const email = data.session.user.email;
-        // Limpa o hash da URL sem recarregar a página
+    // Lê token diretamente do hash da URL (OAuth redirect)
+    const hash = window.location.hash;
+    if (hash.includes('access_token')) {
+      const params = new URLSearchParams(hash.substring(1));
+      const accessToken  = params.get('access_token');
+      const refreshToken = params.get('refresh_token');
+
+      if (accessToken) {
+        // Injeta a sessão manualmente no Supabase
+        const { data, error } = await _supabase.auth.setSession({
+          access_token:  accessToken,
+          refresh_token: refreshToken || ''
+        });
+
+        // Limpa hash da URL
         history.replaceState(null, '', window.location.pathname);
-        if (checkDomain(email)) {
-          showApp(data.session.user);
-          return;
-        } else {
-          await _supabase.auth.signOut();
-          showLogin();
-          showLoginError(`⛔ Acesso negado. Apenas contas ${ALLOWED_DOMAIN} têm permissão. Você tentou entrar com: ${email}`);
-          return;
+
+        if (data?.user) {
+          const email = data.user.email;
+          if (checkDomain(email)) {
+            showApp(data.user);
+            return;
+          } else {
+            await _supabase.auth.signOut();
+            showLogin();
+            showLoginError(`⛔ Acesso negado. Apenas contas ${ALLOWED_DOMAIN} têm permissão. Você tentou entrar com: ${email}`);
+            return;
+          }
         }
       }
     }
 
-    // Verifica sessão existente
-    const { data: { session } } = await _supabase.auth.getSession();
-    if (session?.user) {
-      const email = session.user.email;
-      if (checkDomain(email)) {
-        showApp(session.user);
-      } else {
-        await _supabase.auth.signOut();
-        showLogin();
-        showLoginError(`⛔ Acesso negado. Apenas contas ${ALLOWED_DOMAIN} têm permissão. Você tentou entrar com: ${email}`);
-      }
-    } else {
-      showLogin();
-    }
-
-    // Escuta mudanças de estado de autenticação
-    _supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
-        const email = session.user.email;
-        history.replaceState(null, '', window.location.pathname);
-        if (checkDomain(email)) {
-          showApp(session.user);
-        } else {
-          await _supabase.auth.signOut();
-          showLogin();
-          showLoginError(`⛔ Acesso negado. Apenas contas ${ALLOWED_DOMAIN} têm permissão. Você tentou entrar com: ${email}`);
-        }
-      } else if (event === 'SIGNED_OUT') {
-        showLogin();
-      }
-    });
+    // Sem hash — mostra tela de login
+    showLogin();
   }
 
   // Boot
