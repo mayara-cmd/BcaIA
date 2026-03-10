@@ -291,8 +291,9 @@
               </div>
             </div>
             <!-- Aviso sobre PDF -->
-            <div id="pdfWarning" style="display:none;background:#fff8e6;border:1px solid #f0d080;border-radius:8px;padding:0.75rem 1rem;font-size:0.75rem;color:#8a7020;margin-bottom:0.75rem;line-height:1.6;">
-              ⚠️ <strong>PDF/DOC detectado:</strong> O arquivo será lido como texto bruto. Para melhores resultados, use arquivos <strong>.txt</strong> ou copie o texto na aba "Inserir Texto".
+            <div id="pdfWarning" style="display:none;background:#eaf4ea;border:1px solid #90c090;border-radius:8px;padding:0.75rem 1rem;font-size:0.75rem;color:#2a6a2a;margin-bottom:0.75rem;line-height:1.6;">
+              ✅ <strong>PDF/DOCX detectado:</strong> O texto será extraído automaticamente via Gemini antes da análise.
+            </div>
             </div>
           </div>
 
@@ -717,34 +718,55 @@ async function analyzeContract() {
   const rp = document.getElementById('resultPlaceholder');
   const ld = document.getElementById('loadingResult');
   const ar = document.getElementById('analysisResult');
+  const ldMsg = ld.querySelector('div:last-child');
   rp.style.display = 'none';
   ar.style.display = 'none';
   ld.style.display = 'flex';
 
   try {
     let contractText = '';
+
     if (currentMode === 'text') {
+      // ── Modo texto: usa direto ────────────────────────────────
       contractText = document.getElementById('manualText').value.trim();
+
     } else {
       const f = window._contractFile;
-      if (isBinaryFile(f)) {
-        // Para PDF/DOC: avisa o usuário que extração no browser é limitada
-        // e sugere usar o modo texto. Tenta mesmo assim via base64 → bca-chat não suporta extração,
-        // então para o comparador usamos readAsText com limpeza agressiva.
+      if (!f) throw new Error('Nenhum arquivo selecionado.');
+
+      if (/\.txt$/i.test(f.name)) {
+        // ── TXT: lê direto no browser ─────────────────────────
         contractText = await readFileAsText(f);
-        contractText = contractText.replace(/[^\x20-\x7E\xA0-\xFF\n\r\t]/g, ' ')
-                                   .replace(/\s{3,}/g, ' ').trim();
+
+      } else if (/\.(pdf|doc|docx)$/i.test(f.name)) {
+        // ── PDF/DOCX: envia ao bca-embed para extração via Gemini
+        if (ldMsg) ldMsg.textContent = 'Extraindo texto do arquivo via Gemini...';
+        const base64   = await readFileAsBase64(f);
+        const mimeType = f.type || (f.name.endsWith('.pdf') ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+
+        // Chama bca-embed em modo "só extração" — passa flag extract_only: true
+        const extractRes = await callEdgeFunction('bca-embed', {
+          nome_arquivo: f.name,
+          base64,
+          mime_type:    mimeType,
+          extract_only: true   // ← não indexa, só extrai o texto
+        });
+        contractText = extractRes; // bca-embed retorna o texto no campo response quando extract_only
+
       } else {
-        contractText = await readFileAsText(f);
+        throw new Error('Formato não suportado. Use .txt, .pdf, .doc ou .docx.');
       }
     }
 
-    if (!contractText || contractText.length < 20) {
-      throw new Error('Não foi possível extrair texto legível do arquivo. Use a aba "Inserir Texto" e cole o conteúdo manualmente.');
+    contractText = (contractText || '').trim();
+    if (contractText.length < 20) {
+      throw new Error('Texto muito curto ou ilegível. Verifique o arquivo ou cole o texto manualmente na aba "Inserir Texto".');
     }
 
+    // ── Envia ao bca-chat para comparação ─────────────────────
+    if (ldMsg) ldMsg.textContent = 'Buscando cláusulas similares na base BCA...';
     const reply = await callEdgeFunction('bca-chat', {
-      message: `TEXTO FORNECIDO PARA COMPARAÇÃO:\n"""\n${contractText.slice(0, 6000)}\n"""`,
+      message: `TEXTO FORNECIDO PARA COMPARAÇÃO:\n"""\n${contractText.slice(0, 8000)}\n"""`,
       mode: 'comparador'
     });
 
