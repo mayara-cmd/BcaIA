@@ -414,10 +414,14 @@
           </div>
           <div id="analysisResult" style="display:none;flex-direction:column;gap:1rem;">
             <div style="background:var(--white);border:1px solid var(--fendi-border);border-radius:10px;padding:1.25rem;">
-              <div style="font-family:'Montserrat',sans-serif;font-size:0.62rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--email-dark);margin-bottom:0.9rem;">
-                Análise Comparativa · Cláusulas BCA · Gemini
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.9rem;">
+                <div style="font-family:'Montserrat',sans-serif;font-size:0.62rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--email-dark);">
+                  Análise Comparativa · Cláusulas BCA · Groq
+                </div>
+                <button onclick="toggleCompDebug()" style="background:none;border:1px solid #2a3a2a;color:#4a7a4a;font-size:0.6rem;font-family:'Courier New',monospace;padding:2px 8px;border-radius:4px;cursor:pointer;">🔍 debug</button>
               </div>
               <div id="aiAnalysis" style="font-size:0.83rem;line-height:1.85;color:var(--dark-gray);"></div>
+              <pre id="compDebugPanel" style="display:none;margin-top:1rem;background:#0d1117;border:1px solid #2a4a2a;border-radius:8px;padding:0.75rem;font-size:0.65rem;color:#7ec87e;font-family:'Courier New',monospace;max-height:220px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;line-height:1.6;"></pre>
             </div>
           </div>
         </div>
@@ -826,7 +830,7 @@ async function analyzeContract() {
       throw new Error('Texto muito curto ou ilegível. Verifique o arquivo ou cole o texto manualmente na aba "Inserir Texto".');
     }
 
-    // ── Envia ao bca-chat para comparação ─────────────────────
+    // ── Envia ao bca-chat-groq para comparação ────────────────
     if (ldMsg) ldMsg.textContent = 'Buscando cláusulas similares na base BCA...';
     const reply = await callEdgeFunction('bca-chat-groq', {
       message: `TEXTO FORNECIDO PARA COMPARAÇÃO:\n"""\n${contractText.slice(0, 8000)}\n"""`,
@@ -835,13 +839,36 @@ async function analyzeContract() {
 
     ld.style.display = 'none';
     ar.style.display = 'flex';
-    document.getElementById('aiAnalysis').innerHTML = fmt(reply);
+
+    // Detecta resposta de erro genérica (ex: "Sem resposta da IA" ou "sobrecarregado")
+    const isErrorReply = !reply || reply.length < 30 ||
+      reply.includes('sobrecarregado') || reply.includes('Sem resposta') ||
+      reply.includes('Verifique o campo debug');
+
+    document.getElementById('aiAnalysis').innerHTML = isErrorReply
+      ? `<span style="color:#b05a5a;">⚠️ ${reply || 'Sem resposta recebida.'}</span><br><span style="font-size:0.75rem;color:var(--email-dark);">Clique em 🔍 debug para ver detalhes.</span>`
+      : fmt(reply);
+
+    // Salva debug bruto sempre
+    const rawDebug = window._lastRawResponse || 'sem resposta bruta';
+    document.getElementById('compDebugPanel').textContent =
+      `STATUS HTTP: ${window._lastStatus ?? '?'}\n\nRESPOSTA BRUTA:\n${rawDebug}`;
 
   } catch(err) {
     ld.style.display = 'none';
-    rp.style.display = 'flex';
-    rp.innerHTML = `<div style="font-size:2.5rem;opacity:0.3;">⚖️</div><div style="font-size:0.82rem;color:#b05a5a;line-height:1.7;">Erro: ${err.message}</div>`;
+    ar.style.display = 'flex';
+    document.getElementById('aiAnalysis').innerHTML =
+      `<span style="color:#b05a5a;">❌ Erro: ${err.message}</span>`;
+    const rawDebug = window._lastRawResponse || 'sem resposta';
+    document.getElementById('compDebugPanel').textContent =
+      `ERRO: ${err.message}\n\nSTATUS HTTP: ${window._lastStatus ?? '?'}\n\nRESPOSTA BRUTA:\n${rawDebug}`;
+    document.getElementById('compDebugPanel').style.display = 'block';
   }
+}
+
+function toggleCompDebug() {
+  const p = document.getElementById('compDebugPanel');
+  p.style.display = p.style.display === 'none' ? 'block' : 'none';
 }
 
 // ══════════════════════════════════════════════
