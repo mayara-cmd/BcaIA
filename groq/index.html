@@ -293,6 +293,12 @@
 
     <!-- ══ CHAT ══ -->
     <div class="panel active" id="panel-chat">
+      <div style="display:flex;align-items:center;justify-content:flex-end;padding:0.4rem 1.5rem 0;background:var(--white);border-bottom:1px solid var(--fendi-border);gap:0.5rem;flex-shrink:0;">
+        <button onclick="clearHistoryAndReset()" title="Limpar histórico da sessão"
+          style="background:none;border:1px solid var(--fendi-border);border-radius:6px;padding:0.22rem 0.6rem;font-size:0.65rem;font-family:'Montserrat',sans-serif;color:var(--email-dark);cursor:pointer;letter-spacing:0.05em;">
+          🗑️ Limpar histórico
+        </button>
+      </div>
       <div class="chat-messages" id="chatMessages">
         <div class="message">
           <div class="msg-av ai">BCA</div>
@@ -645,7 +651,51 @@ function toggleDebug() {
   status.textContent = `HTTP ${st}`;
 }
 
-function addMessage(html, isUser) {
+// ── Histórico de conversa da sessão ──────────────────────────
+const HIST_KEY = 'bca_chat_history';
+function saveHistory(role, content) {
+  try {
+    const h = loadHistory();
+    h.push({ role, content, ts: Date.now() });
+    // Mantém últimas 40 mensagens
+    const trimmed = h.slice(-40);
+    sessionStorage.setItem(HIST_KEY, JSON.stringify(trimmed));
+  } catch(e) {}
+}
+function loadHistory() {
+  try { return JSON.parse(sessionStorage.getItem(HIST_KEY) || '[]'); } catch(e) { return []; }
+}
+function clearHistory() {
+  try { sessionStorage.removeItem(HIST_KEY); } catch(e) {}
+}
+function clearHistoryAndReset() {
+  clearHistory();
+  const c = document.getElementById('chatMessages');
+  c.innerHTML = `
+    <div class="message">
+      <div class="msg-av ai">BCA</div>
+      <div>
+        <div class="msg-bubble">
+          <div class="welcome-h">Assistente Jurídico BCA</div>
+          <div style="font-size:0.84rem;color:var(--email-dark);line-height:1.7">Olá! Histórico limpo. Como posso ajudar?</div>
+        </div>
+        <div class="msg-source">🤖 Groq · Llama 3.3 · Base BCA</div>
+      </div>
+    </div>`;
+  document.getElementById('debugRow').style.display = 'none';
+  document.getElementById('debugPanel').classList.remove('show');
+}
+function restoreHistory() {
+  const h = loadHistory();
+  if (h.length === 0) return;
+  const c = document.getElementById('chatMessages');
+  // Remove mensagem de boas-vindas antes de restaurar
+  const welcome = c.querySelector('.message');
+  if (welcome && h.length > 0) welcome.remove();
+  h.forEach(m => addMessageRaw(m.content, m.role === 'user'));
+}
+
+function addMessageRaw(html, isUser) {
   const c = document.getElementById('chatMessages');
   const d = document.createElement('div');
   d.className = 'message' + (isUser ? ' user' : '');
@@ -655,6 +705,11 @@ function addMessage(html, isUser) {
   d.innerHTML = isUser ? `${bub}${av}` : `${av}<div>${bub}${src}</div>`;
   c.appendChild(d);
   c.scrollTop = c.scrollHeight;
+}
+
+function addMessage(html, isUser) {
+  addMessageRaw(html, isUser);
+  saveHistory(isUser ? 'user' : 'assistant', html);
 }
 
 function addTyping() {
@@ -858,7 +913,7 @@ async function analyzeContract() {
     // ── Envia ao bca-chat-groq para comparação ────────────────
     if (ldMsg) ldMsg.textContent = 'Buscando cláusulas similares na base BCA...';
     const reply = await callEdgeFunction('bca-chat-groq', {
-      message: `TEXTO FORNECIDO PARA COMPARAÇÃO:\n"""\n${contractText.slice(0, 8000)}\n"""`,
+      message: `TEXTO FORNECIDO PARA COMPARAÇÃO:\n"""\n${contractText.slice(0, 3000)}\n"""`,
       mode: 'comparador'
     });
 
@@ -931,20 +986,70 @@ async function loadBucketFiles() {
 
     _bucketFiles = files.filter(f => f.name && /\.(pdf|doc|docx|txt)$/i.test(f.name));
 
-    listEl.innerHTML = _bucketFiles.map((f, i) => `
-      <div style="display:flex;align-items:center;gap:0.6rem;padding:0.45rem 0.6rem;background:var(--email-light);border-radius:6px;border:1px solid var(--fendi-border);">
+    // Consulta quais já estão indexados no Supabase
+    let indexed = new Set();
+    try {
+      const sess = loadSession();
+      const authToken = sess?.token || SUPABASE_ANON_KEY;
+      const qRes = await fetch(`${SUPABASE_URL}/rest/v1/documentos?select=nome_arquivo`, {
+        headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${authToken}` }
+      });
+      const docs = await qRes.json();
+      if (Array.isArray(docs)) docs.forEach(d => indexed.add(d.nome_arquivo));
+    } catch(e) {}
+
+    listEl.innerHTML = _bucketFiles.map((f, i) => {
+      const jaIndexado = indexed.has(f.name);
+      return `
+      <div style="display:flex;align-items:center;gap:0.6rem;padding:0.45rem 0.6rem;background:var(--email-light);border-radius:6px;border:1px solid ${jaIndexado ? '#c0dac8' : 'var(--fendi-border)'};">
         <span style="font-size:0.85rem;">${/\.pdf$/i.test(f.name) ? '📄' : /\.(doc|docx)$/i.test(f.name) ? '📝' : '📃'}</span>
-        <span style="font-size:0.74rem;color:var(--dark-gray);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${f.name}</span>
+        <span style="font-size:0.74rem;color:var(--dark-gray);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${f.name}">${f.name}</span>
         <span style="font-size:0.62rem;color:var(--email-dark);">${f.metadata?.size ? (f.metadata.size/1024).toFixed(0)+'KB' : ''}</span>
-        <button onclick="indexSingleBucketFile('${f.name}', this)" 
-          style="padding:0.2rem 0.55rem;background:var(--fendi-dim);border:1px solid var(--fendi-border);border-radius:5px;font-size:0.62rem;font-family:'Montserrat',sans-serif;font-weight:700;color:var(--fendi);cursor:pointer;white-space:nowrap;">
-          Indexar
-        </button>
-      </div>
-    `).join('');
+        ${jaIndexado
+          ? `<span style="padding:0.2rem 0.55rem;background:#eef5f0;border:1px solid #c0dac8;border-radius:5px;font-size:0.6rem;font-family:'Montserrat',sans-serif;font-weight:700;color:#5a8a6a;white-space:nowrap;">✅ Na RAG</span>
+             <button onclick="reindexBucketFile('${f.name}', this)" title="Forçar reindexação"
+               style="padding:0.2rem 0.45rem;background:none;border:1px solid var(--fendi-border);border-radius:5px;font-size:0.6rem;color:var(--email-dark);cursor:pointer;">🔄</button>`
+          : `<button onclick="indexSingleBucketFile('${f.name}', this)"
+               style="padding:0.2rem 0.55rem;background:var(--fendi-dim);border:1px solid var(--fendi-border);border-radius:5px;font-size:0.62rem;font-family:'Montserrat',sans-serif;font-weight:700;color:var(--fendi);cursor:pointer;white-space:nowrap;">
+               Indexar
+             </button>`
+        }
+      </div>`;
+    }).join('');
+    
+    const total = _bucketFiles.length;
+    const jaOk  = _bucketFiles.filter(f => indexed.has(f.name)).length;
+    listEl.insertAdjacentHTML('afterbegin', `
+      <div style="font-size:0.72rem;padding:0.4rem 0.5rem;border-radius:6px;background:${jaOk===total?'#eef5f0':'#fff8e6'};border:1px solid ${jaOk===total?'#c0dac8':'#f0d080'};color:${jaOk===total?'#5a8a6a':'#8a7020'};margin-bottom:0.35rem;">
+        📊 <strong>${jaOk}/${total}</strong> documentos indexados na RAG
+      </div>`);
 
   } catch(e) {
     listEl.innerHTML = `<div style="font-size:0.75rem;color:#b05a5a;">Erro ao listar bucket: ${e.message}</div>`;
+  }
+}
+
+async function reindexBucketFile(filename, btn) {
+  if (!confirm(`Reindexar "${filename}"?\nOs chunks anteriores serão excluídos e recriados.`)) return;
+  if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
+  // Deleta documento anterior (chunks em cascata)
+  try {
+    const _sess = loadSession();
+    const _tok  = _sess?.token || SUPABASE_ANON_KEY;
+    await fetch(`${SUPABASE_URL}/rest/v1/documentos?nome_arquivo=eq.${encodeURIComponent(filename)}`, {
+      method: 'DELETE',
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${_tok}`, 'Prefer': 'return=minimal' }
+    });
+  } catch(e) {}
+  // Reindexar
+  const parentRow = btn?.closest('div[style*="display:flex"]');
+  const fakeBtn   = { textContent: '', disabled: false, style: {}, title: '' };
+  const res = await indexSingleBucketFile(filename, fakeBtn);
+  if (res.ok) {
+    if (btn) btn.closest('div[style*="display:flex"]')?.querySelector('span[style*="5a8a6a"]')?.remove();
+    setTimeout(() => loadBucketFiles(), 800);
+  } else {
+    if (btn) { btn.textContent = '❌'; btn.disabled = false; btn.title = res.erro; }
   }
 }
 
@@ -1218,6 +1323,36 @@ function initAuth() {
 }
 
 initAuth();
+
+// ── Anti-pausa Supabase (ping a cada 3 dias via localStorage) ────
+(function antiPausa() {
+  const KEY      = 'bca_last_ping';
+  const INTERVAL = 3 * 24 * 60 * 60 * 1000; // 3 dias em ms
+  const now      = Date.now();
+  let lastPing   = 0;
+  try { lastPing = parseInt(localStorage.getItem(KEY) || '0'); } catch(e) {}
+
+  if (now - lastPing > INTERVAL) {
+    // Faz um ping leve na Edge Function para manter o projeto ativo
+    fetch(`${FUNCTIONS_URL}/bca-chat-groq`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
+      body: JSON.stringify({ message: 'ping', mode: 'chat' })
+    }).then(() => {
+      try { localStorage.setItem(KEY, String(Date.now())); } catch(e) {}
+      console.log('[BCA] Anti-pausa ping enviado');
+    }).catch(() => {});
+  }
+})();
+
+// ── Restaurar histórico da sessão ────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  // Pequeno delay para garantir que o app já está visível
+  setTimeout(() => {
+    const saved = loadSession();
+    if (saved?.token) restoreHistory();
+  }, 300);
+});
 </script>
 </body>
 </html>
