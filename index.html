@@ -50,7 +50,6 @@
   .tab:hover { color:var(--dark-gray); }
   .tab.active { color:var(--fendi); border-bottom-color:var(--fendi); }
 
-  /* ── MOBILE ─────────────────────────────────────────── */
   @media (max-width:768px) {
     body { overflow:hidden; }
     .topbar { padding:0 0.75rem; height:48px; }
@@ -59,15 +58,12 @@
     .sidebar { display:none; }
     .tabs { padding:0; }
     .tab { padding:0.7rem 0.6rem; font-size:0.68rem; flex:1; text-align:center; }
-    /* Chat */
     .chat-messages { padding:0.75rem; }
     .chat-input-area { padding:0.6rem 0.75rem; }
     .msg-bubble { max-width:82vw; font-size:0.82rem; }
-    /* Comparador empilhado */
     .comp-wrap { flex-direction:column !important; overflow-y:auto !important; }
     .comp-left { width:100% !important; border-right:none !important; border-bottom:1px solid var(--fendi-border) !important; flex-shrink:0; }
     .comp-right { flex:1; min-height:55vh; overflow-y:auto; }
-    /* Upload */
     .up-body { padding:0.75rem; }
     .up-header { padding:0.75rem 1rem; }
     .up-drop { padding:1.5rem 1rem; }
@@ -76,7 +72,6 @@
   .panel { display:none; flex:1; overflow:hidden; }
   .panel.active { display:flex; flex-direction:column; }
 
-  /* CHAT */
   .chat-messages { flex:1; overflow-y:auto; padding:2rem; display:flex; flex-direction:column; gap:1.25rem; }
   .chat-messages::-webkit-scrollbar { width:4px; }
   .chat-messages::-webkit-scrollbar-thumb { background:var(--fendi-border); border-radius:2px; }
@@ -105,29 +100,15 @@
   .error-banner { background:#fdf0f0; border:1px solid #f0c0c0; border-radius:8px; padding:0.65rem 1rem; font-size:0.77rem; color:#b05a5a; margin-top:0.6rem; display:none; }
   .error-banner.show { display:block; }
 
-  /* DEBUG PANEL */
-  .debug-panel {
-    background:#0d1117; border:1px solid #2a4a2a; border-radius:8px;
-    padding:0.75rem 1rem; font-size:0.68rem; color:#7ec87e;
-    font-family:'Courier New',monospace; margin-top:0.5rem;
-    max-height:180px; overflow-y:auto; line-height:1.6;
-    white-space:pre-wrap; word-break:break-all; display:none;
-  }
+  .debug-panel { background:#0d1117; border:1px solid #2a4a2a; border-radius:8px; padding:0.75rem 1rem; font-size:0.68rem; color:#7ec87e; font-family:'Courier New',monospace; margin-top:0.5rem; max-height:180px; overflow-y:auto; line-height:1.6; white-space:pre-wrap; word-break:break-all; display:none; }
   .debug-panel.show { display:block; }
   .debug-row { display:flex; align-items:center; gap:8px; margin-top:0.3rem; }
-  .debug-toggle-btn {
-    background:none; border:1px solid #2a3a2a; color:#4a7a4a;
-    font-size:0.62rem; font-family:'Courier New',monospace;
-    padding:2px 8px; border-radius:4px; cursor:pointer;
-    transition:all 0.15s;
-  }
+  .debug-toggle-btn { background:none; border:1px solid #2a3a2a; color:#4a7a4a; font-size:0.62rem; font-family:'Courier New',monospace; padding:2px 8px; border-radius:4px; cursor:pointer; transition:all 0.15s; }
   .debug-toggle-btn:hover { border-color:var(--fendi); color:var(--fendi); }
 
-  /* loading ring */
   @keyframes spin { to{transform:rotate(360deg)} }
   .loading-ring { width:28px; height:28px; border:2px solid var(--fendi-border); border-top-color:var(--fendi); border-radius:50%; animation:spin 0.9s linear infinite; }
 
-  /* UPLOAD PANEL */
   .up-header { padding:1.5rem 2rem; background:var(--white); border-bottom:1px solid var(--fendi-border); flex-shrink:0; }
   .up-title { font-family:'Montserrat',sans-serif; font-size:0.85rem; font-weight:600; color:var(--dark-gray); margin-bottom:2px; }
   .up-sub { font-size:0.75rem; color:var(--email-dark); }
@@ -182,14 +163,13 @@
   async function extractDOCXInBrowser(file) {
     const ab = await file.arrayBuffer();
     const raw = new Uint8Array(ab).reduce((s,b) => s + String.fromCharCode(b), "");
-    const dec = raw;
-    const start = dec.indexOf("<w:body");
-    const end   = dec.indexOf("</w:body>");
-    if (start === -1) return dec.replace(/[^\x20-\x7E\xA0-\xFF\n]/g, " ").replace(/\s{3,}/g," ").trim();
-    return dec.slice(start, end + 9)
+    const start = raw.indexOf("<w:body");
+    const end   = raw.indexOf("</w:body>");
+    if (start === -1) return raw.replace(/[^\x20-\x7E\xA0-\xFF\n]/g, " ").replace(/\s{3,}/g," ").trim();
+    return raw.slice(start, end + 9)
       .replace(/<w:br[^>]*>/g,"\n").replace(/<w:p[ >]/g,"\n")
       .replace(/<[^>]+>/g,"")
-      .replace(/&amp;/g,"\&").replace(/&lt;/g,"<").replace(/&gt;/g,">")
+      .replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">")
       .replace(/\n{3,}/g,"\n\n").trim();
   }
 
@@ -213,13 +193,9 @@
 </head>
 <body>
 
-<!-- ══ LOGIN SCREEN ══ -->
-<div id="loginScreen" style="
-  position:fixed;inset:0;z-index:9999;background:var(--black);
-  display:flex;align-items:center;justify-content:center;font-family:'Lato',sans-serif;">
-  <div style="background:#111;border:1px solid rgba(157,136,109,0.25);border-radius:16px;
-    padding:3rem 2.5rem;width:100%;max-width:400px;text-align:center;
-    display:flex;flex-direction:column;gap:1.5rem;">
+<!-- ══ LOGIN ══ -->
+<div id="loginScreen" style="position:fixed;inset:0;z-index:9999;background:var(--black);display:flex;align-items:center;justify-content:center;font-family:'Lato',sans-serif;">
+  <div style="background:#111;border:1px solid rgba(157,136,109,0.25);border-radius:16px;padding:3rem 2.5rem;width:100%;max-width:400px;text-align:center;display:flex;flex-direction:column;gap:1.5rem;">
     <div>
       <div style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:2rem;color:var(--fendi-light);letter-spacing:0.12em;">BCA</div>
       <div style="font-size:0.7rem;color:var(--email-dark);letter-spacing:0.2em;text-transform:uppercase;margin-top:4px;">Barbur Carneiro Advogados</div>
@@ -229,13 +205,7 @@
       <div style="font-family:'Montserrat',sans-serif;font-size:0.88rem;font-weight:600;color:var(--fendi-light);margin-bottom:0.5rem;">Assistente Jurídico</div>
       <div style="font-size:0.78rem;color:var(--email-dark);line-height:1.6;">Acesso restrito à equipe BCA.<br>Faça login com sua conta Google corporativa.</div>
     </div>
-    <button id="loginBtn" onclick="loginWithGoogle()" style="
-      display:flex;align-items:center;justify-content:center;gap:12px;
-      background:var(--white);color:#444;border:none;border-radius:10px;
-      padding:0.875rem 1.5rem;font-family:'Montserrat',sans-serif;font-size:0.8rem;
-      font-weight:600;cursor:pointer;transition:all 0.2s;letter-spacing:0.04em;width:100%;"
-      onmouseover="this.style.background='var(--fendi-light)'"
-      onmouseout="this.style.background='var(--white)'">
+    <button id="loginBtn" onclick="loginWithGoogle()" style="display:flex;align-items:center;justify-content:center;gap:12px;background:var(--white);color:#444;border:none;border-radius:10px;padding:0.875rem 1.5rem;font-family:'Montserrat',sans-serif;font-size:0.8rem;font-weight:600;cursor:pointer;transition:all 0.2s;letter-spacing:0.04em;width:100%;" onmouseover="this.style.background='var(--fendi-light)'" onmouseout="this.style.background='var(--white)'">
       <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/></svg>
       Entrar com Google
     </button>
@@ -250,7 +220,8 @@
 
 <div class="topbar">
   <div class="logo">
-    <div class="logo-mark">BCA</div><div style="background:#f55036;color:white;font-size:0.5rem;font-family:Montserrat,sans-serif;font-weight:700;padding:2px 6px;border-radius:4px;letter-spacing:0.08em;">GROQ</div>
+    <div class="logo-mark">BCA</div>
+    <div style="background:#f55036;color:white;font-size:0.5rem;font-family:Montserrat,sans-serif;font-weight:700;padding:2px 6px;border-radius:4px;letter-spacing:0.08em;">GROQ</div>
     <div class="logo-div"></div>
     <div class="logo-sub">Barbur Carneiro Advogados</div>
   </div>
@@ -259,12 +230,7 @@
     <span id="llmStatus" style="font-size:0.7rem;">⏳ Verificando Groq...</span>
     &nbsp;·&nbsp;
     <span id="userEmail" style="font-size:0.7rem;">—</span>
-    <button onclick="logout()" style="
-      margin-left:0.75rem;background:none;border:1px solid #333;color:var(--email-dark);
-      border-radius:5px;padding:0.25rem 0.6rem;font-size:0.65rem;cursor:pointer;
-      font-family:'Lato',sans-serif;transition:all 0.18s;letter-spacing:0.05em;"
-      onmouseover="this.style.borderColor='var(--fendi)';this.style.color='var(--fendi)'"
-      onmouseout="this.style.borderColor='#333';this.style.color='var(--email-dark)'">Sair</button>
+    <button onclick="logout()" style="margin-left:0.75rem;background:none;border:1px solid #333;color:var(--email-dark);border-radius:5px;padding:0.25rem 0.6rem;font-size:0.65rem;cursor:pointer;font-family:'Lato',sans-serif;transition:all 0.18s;letter-spacing:0.05em;" onmouseover="this.style.borderColor='var(--fendi)';this.style.color='var(--fendi)'" onmouseout="this.style.borderColor='#333';this.style.color='var(--email-dark)'">Sair</button>
   </div>
 </div>
 
@@ -280,7 +246,7 @@
       <div class="nav-item" onclick="switchTab('upload-docs',this)"><span class="nav-icon">📥</span> Adicionar Documentos</div>
     </div>
     <div class="sb-footer">
-      <div class="sb-footer-text">🔒 Dados processados via<br>Gemini + Supabase BCA</div>
+      <div class="sb-footer-text">🔒 Dados processados via<br>Groq + Supabase BCA</div>
     </div>
   </div>
 
@@ -294,10 +260,7 @@
     <!-- ══ CHAT ══ -->
     <div class="panel active" id="panel-chat">
       <div style="display:flex;align-items:center;justify-content:flex-end;padding:0.4rem 1.5rem 0;background:var(--white);border-bottom:1px solid var(--fendi-border);gap:0.5rem;flex-shrink:0;">
-        <button onclick="clearHistoryAndReset()" title="Limpar histórico da sessão"
-          style="background:none;border:1px solid var(--fendi-border);border-radius:6px;padding:0.22rem 0.6rem;font-size:0.65rem;font-family:'Montserrat',sans-serif;color:var(--email-dark);cursor:pointer;letter-spacing:0.05em;">
-          🗑️ Limpar histórico
-        </button>
+        <button onclick="clearHistoryAndReset()" style="background:none;border:1px solid var(--fendi-border);border-radius:6px;padding:0.22rem 0.6rem;font-size:0.65rem;font-family:'Montserrat',sans-serif;color:var(--email-dark);cursor:pointer;letter-spacing:0.05em;">🗑️ Limpar histórico</button>
       </div>
       <div class="chat-messages" id="chatMessages">
         <div class="message">
@@ -305,7 +268,7 @@
           <div>
             <div class="msg-bubble">
               <div class="welcome-h">Assistente Jurídico BCA</div>
-              <div style="font-size:0.84rem;color:var(--email-dark);line-height:1.7">Olá! Estou conectado à base de conhecimento do escritório via Gemini + RAG. Faça sua consulta jurídica abaixo.</div>
+              <div style="font-size:0.84rem;color:var(--email-dark);line-height:1.7">Olá! Estou conectado à base de conhecimento do escritório. Faça sua consulta jurídica abaixo.</div>
               <div class="chips">
                 <div class="chip" onclick="useChip(this)">Quais são as penalidades do Código de Ética BCA?</div>
                 <div class="chip" onclick="useChip(this)">Como funciona o conflito de interesses no BCA?</div>
@@ -319,12 +282,10 @@
       </div>
       <div class="chat-input-area">
         <div class="input-wrap">
-          <textarea class="chat-input" id="chatInput" placeholder="Digite sua consulta jurídica..." rows="1"
-            onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+          <textarea class="chat-input" id="chatInput" placeholder="Digite sua consulta jurídica..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
           <button class="send-btn" id="sendBtn" onclick="sendMessage()">➤</button>
         </div>
         <div class="error-banner" id="errorBanner"></div>
-        <!-- DEBUG: visível apenas em modo debug -->
         <div id="debugRow" class="debug-row" style="display:none;">
           <button class="debug-toggle-btn" onclick="toggleDebug()">🔍 ver resposta bruta</button>
           <span id="debugStatus" style="font-size:0.62rem;color:var(--email-dark);"></span>
@@ -336,32 +297,17 @@
     <!-- ══ COMPARADOR ══ -->
     <div class="panel" id="panel-comparador">
       <div class="comp-wrap" style="display:flex;flex:1;overflow:hidden;">
-
-        <!-- LEFT — painel de input (menor, fixo) -->
         <div class="comp-left" style="width:340px;flex-shrink:0;background:var(--white);border-right:1px solid var(--fendi-border);overflow-y:auto;padding:1.25rem;display:flex;flex-direction:column;gap:0.75rem;">
-          <div style="font-family:'Montserrat',sans-serif;font-size:0.65rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--fendi);">
-            📤 Documento para Análise
-          </div>
-
-          <!-- Toggle upload/texto -->
+          <div style="font-family:'Montserrat',sans-serif;font-size:0.65rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--fendi);">📤 Documento para Análise</div>
           <div style="display:flex;border:1px solid var(--fendi-border);border-radius:8px;overflow:hidden;">
-            <button id="btnUpload" onclick="setMode('upload')" style="flex:1;padding:0.55rem;font-family:'Montserrat',sans-serif;font-size:0.68rem;font-weight:700;border:none;cursor:pointer;transition:all 0.18s;background:var(--black);color:var(--fendi-light);">
-              📄 Upload
-            </button>
-            <button id="btnText" onclick="setMode('text')" style="flex:1;padding:0.55rem;font-family:'Montserrat',sans-serif;font-size:0.68rem;font-weight:700;border:none;cursor:pointer;transition:all 0.18s;background:var(--email-light);color:var(--email-dark);">
-              ✏️ Inserir Texto
-            </button>
+            <button id="btnUpload" onclick="setMode('upload')" style="flex:1;padding:0.55rem;font-family:'Montserrat',sans-serif;font-size:0.68rem;font-weight:700;border:none;cursor:pointer;transition:all 0.18s;background:var(--black);color:var(--fendi-light);">📄 Upload</button>
+            <button id="btnText" onclick="setMode('text')" style="flex:1;padding:0.55rem;font-family:'Montserrat',sans-serif;font-size:0.68rem;font-weight:700;border:none;cursor:pointer;transition:all 0.18s;background:var(--email-light);color:var(--email-dark);">✏️ Inserir Texto</button>
           </div>
-
-          <!-- UPLOAD AREA -->
           <div id="areaUpload">
             <div id="uploadZone" style="border:2px dashed var(--fendi-border);border-radius:10px;padding:1.25rem 1rem;text-align:center;cursor:pointer;transition:all 0.22s;position:relative;background:var(--email-light);margin-bottom:0.5rem;">
               <input type="file" accept=".pdf,.doc,.docx,.txt" onchange="handleFile(this)" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;" />
               <div style="font-size:1.5rem;margin-bottom:0.35rem;">📄</div>
-              <div style="font-size:0.75rem;color:var(--email-dark);line-height:1.5;">
-                <strong style="color:var(--fendi);">Clique</strong> ou arraste aqui<br>
-                <span style="font-size:0.68rem;">TXT · PDF · DOC · DOCX</span>
-              </div>
+              <div style="font-size:0.75rem;color:var(--email-dark);line-height:1.5;"><strong style="color:var(--fendi);">Clique</strong> ou arraste aqui<br><span style="font-size:0.68rem;">TXT · PDF · DOC · DOCX</span></div>
             </div>
             <div id="fileCard" style="display:none;align-items:center;gap:0.6rem;background:var(--fendi-light);border:1px solid var(--fendi-border);border-radius:8px;padding:0.6rem 0.75rem;margin-bottom:0.5rem;">
               <span style="font-size:1.1rem;">📄</span>
@@ -370,46 +316,20 @@
                 <div id="fileSize" style="font-size:0.66rem;color:var(--email-dark);">—</div>
               </div>
             </div>
-            <div id="pdfWarning" style="display:none;background:#eaf4ea;border:1px solid #90c090;border-radius:8px;padding:0.6rem 0.75rem;font-size:0.72rem;color:#2a6a2a;line-height:1.5;">
-              ✅ <strong>PDF/DOCX:</strong> texto extraído automaticamente.
-            </div>
+            <div id="pdfWarning" style="display:none;background:#eaf4ea;border:1px solid #90c090;border-radius:8px;padding:0.6rem 0.75rem;font-size:0.72rem;color:#2a6a2a;line-height:1.5;">✅ <strong>PDF/DOCX:</strong> texto extraído automaticamente.</div>
           </div>
-
-          <!-- TEXT AREA — maior para caber bem o texto -->
           <div id="areaText" style="display:none;flex-direction:column;gap:0.35rem;flex:1;">
-            <textarea id="manualText"
-              placeholder="Cole ou digite aqui a cláusula ou o texto do contrato que deseja comparar com os padrões BCA..."
-              oninput="onManualInput()"
-              style="width:100%;flex:1;min-height:200px;height:calc(100vh - 320px);max-height:60vh;background:var(--email-light);border:1px solid var(--fendi-border);border-radius:10px;padding:0.875rem;font-family:'Lato',sans-serif;font-size:0.83rem;color:var(--dark-gray);resize:vertical;outline:none;line-height:1.65;transition:border-color 0.18s;"
-              onfocus="this.style.borderColor='var(--fendi)'"
-              onblur="this.style.borderColor='var(--fendi-border)'"
-            ></textarea>
+            <textarea id="manualText" placeholder="Cole ou digite aqui a cláusula ou o texto do contrato que deseja comparar com os padrões BCA..." oninput="onManualInput()" style="width:100%;flex:1;min-height:200px;height:calc(100vh - 320px);max-height:60vh;background:var(--email-light);border:1px solid var(--fendi-border);border-radius:10px;padding:0.875rem;font-family:'Lato',sans-serif;font-size:0.83rem;color:var(--dark-gray);resize:vertical;outline:none;line-height:1.65;transition:border-color 0.18s;" onfocus="this.style.borderColor='var(--fendi)'" onblur="this.style.borderColor='var(--fendi-border)'"></textarea>
             <div id="charCount" style="font-size:0.66rem;color:var(--email-dark);text-align:right;">0 caracteres</div>
           </div>
-
-          <!-- Botão comparar -->
-          <button id="analyzeBtn" onclick="analyzeContract()" disabled
-            style="width:100%;padding:0.75rem;background:var(--black);color:var(--fendi-light);border:none;border-radius:8px;font-family:'Montserrat',sans-serif;font-size:0.71rem;font-weight:700;letter-spacing:0.08em;cursor:not-allowed;transition:all 0.18s;text-transform:uppercase;opacity:0.3;margin-top:auto;">
-            🔍 Buscar e Comparar
-          </button>
-
-          <!-- Como funciona — compacto -->
+          <button id="analyzeBtn" onclick="analyzeContract()" disabled style="width:100%;padding:0.75rem;background:var(--black);color:var(--fendi-light);border:none;border-radius:8px;font-family:'Montserrat',sans-serif;font-size:0.71rem;font-weight:700;letter-spacing:0.08em;cursor:not-allowed;transition:all 0.18s;text-transform:uppercase;opacity:0.3;margin-top:auto;">🔍 Buscar e Comparar</button>
           <div style="background:var(--email-light);border-radius:8px;padding:0.7rem 0.9rem;">
             <div style="font-family:'Montserrat',sans-serif;font-size:0.6rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--dark-gray);margin-bottom:0.5rem;">Como funciona</div>
-            <div style="font-size:0.72rem;color:var(--email-dark);line-height:1.75;">
-              🔍 Busca cláusulas similares nos docs BCA<br>
-              ⚖️ Compara redação e termos jurídicos<br>
-              ⚠️ Identifica diferenças e riscos<br>
-              💡 Sugere adequações aos padrões BCA
-            </div>
+            <div style="font-size:0.72rem;color:var(--email-dark);line-height:1.75;">🔍 Busca cláusulas similares nos docs BCA<br>⚖️ Compara redação e termos jurídicos<br>✏️ Identifica diferenças cláusula a cláusula<br>💡 Sugere adequações aos padrões BCA</div>
           </div>
         </div>
-
-        <!-- RIGHT — resultado (maior, ocupa o restante) -->
         <div class="comp-right" style="flex:1;display:flex;flex-direction:column;overflow-y:auto;padding:1.5rem 1.75rem;min-width:0;">
-          <div style="font-family:'Montserrat',sans-serif;font-size:0.7rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--fendi);margin-bottom:1rem;">
-            📊 Resultado da Comparação
-          </div>
+          <div style="font-family:'Montserrat',sans-serif;font-size:0.7rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--fendi);margin-bottom:1rem;">📊 Resultado da Comparação</div>
           <div id="resultPlaceholder" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--email-dark);text-align:center;gap:1rem;">
             <div style="font-size:2.5rem;opacity:0.3;">⚖️</div>
             <div style="font-size:0.82rem;line-height:1.7;">Insira uma cláusula ou contrato<br>para buscar similares na base BCA<br>e identificar diferenças</div>
@@ -421,9 +341,7 @@
           <div id="analysisResult" style="display:none;flex-direction:column;gap:1rem;">
             <div style="background:var(--white);border:1px solid var(--fendi-border);border-radius:10px;padding:1.25rem;">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.9rem;">
-                <div style="font-family:'Montserrat',sans-serif;font-size:0.62rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--email-dark);">
-                  Análise Comparativa · Cláusulas BCA · Groq
-                </div>
+                <div style="font-family:'Montserrat',sans-serif;font-size:0.62rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--email-dark);">Análise Comparativa · Cláusulas BCA · Groq</div>
                 <button onclick="toggleCompDebug()" style="background:none;border:1px solid #2a3a2a;color:#4a7a4a;font-size:0.6rem;font-family:'Courier New',monospace;padding:2px 8px;border-radius:4px;cursor:pointer;">🔍 debug</button>
               </div>
               <div id="aiAnalysis" style="font-size:0.83rem;line-height:1.85;color:var(--dark-gray);"></div>
@@ -439,24 +357,18 @@
       <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
         <div class="up-header">
           <div class="up-title">Adicionar Documentos à Base de Conhecimento</div>
-          <div class="up-sub">Envie documentos para indexação via Gemini Embeddings — ficam disponíveis no Chat Jurídico</div>
+          <div class="up-sub">Envie documentos para indexação — ficam disponíveis no Chat Jurídico e Comparador</div>
         </div>
         <div class="up-body">
-
-          <!-- ══ INDEXAR BUCKET ══ -->
           <div style="background:var(--white);border:1px solid var(--fendi-border);border-radius:10px;padding:1.1rem 1.25rem;">
-            <div style="font-family:'Montserrat',sans-serif;font-size:0.65rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--fendi);margin-bottom:0.75rem;">
-              📦 Documentos já no Bucket do Supabase
-            </div>
-            <div style="font-size:0.77rem;color:var(--email-dark);margin-bottom:0.9rem;line-height:1.6;">
-              Esses arquivos estão no Storage mas ainda não foram indexados. Clique em <strong>Indexar todos</strong> para gerar os embeddings e disponibilizá-los no Chat e Comparador.
-            </div>
+            <div style="font-family:'Montserrat',sans-serif;font-size:0.65rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--fendi);margin-bottom:0.75rem;">📦 Documentos na Base de Conhecimento</div>
+            <div style="font-size:0.77rem;color:var(--email-dark);margin-bottom:0.9rem;line-height:1.6;">Lista de arquivos no bucket e status de indexação na RAG. Arquivos sem indexação não são consultados pela IA.</div>
             <div id="bucketList" style="display:flex;flex-direction:column;gap:0.4rem;margin-bottom:0.9rem;">
-              <div style="font-size:0.75rem;color:var(--email-dark);">⏳ Carregando lista do bucket...</div>
+              <div style="font-size:0.75rem;color:var(--email-dark);">⏳ Carregando lista...</div>
             </div>
             <div style="display:flex;gap:0.6rem;flex-wrap:wrap;">
               <button onclick="loadBucketFiles()" style="padding:0.55rem 1rem;background:var(--email-light);border:1px solid var(--fendi-border);border-radius:7px;font-family:'Montserrat',sans-serif;font-size:0.68rem;font-weight:700;color:var(--fendi);cursor:pointer;">🔄 Atualizar lista</button>
-              <button id="indexAllBtn" onclick="indexAllBucket()" style="padding:0.55rem 1.2rem;background:var(--black);border:none;border-radius:7px;font-family:'Montserrat',sans-serif;font-size:0.68rem;font-weight:700;color:var(--fendi-light);cursor:pointer;letter-spacing:0.06em;">⚡ Indexar todos</button>
+              <button id="indexAllBtn" onclick="indexAllBucket()" style="padding:0.55rem 1.2rem;background:var(--black);border:none;border-radius:7px;font-family:'Montserrat',sans-serif;font-size:0.68rem;font-weight:700;color:var(--fendi-light);cursor:pointer;letter-spacing:0.06em;">⚡ Indexar não indexados</button>
             </div>
             <div id="bucketProgress" style="display:none;margin-top:0.75rem;">
               <div style="font-size:0.72rem;color:var(--email-dark);margin-bottom:0.4rem;" id="bucketProgressMsg">Indexando...</div>
@@ -467,53 +379,39 @@
             <div id="bucketResult" style="display:none;margin-top:0.75rem;padding:0.65rem 0.9rem;border-radius:8px;font-size:0.75rem;line-height:1.6;"></div>
           </div>
 
-          <div class="up-warn">
-            ⚠️ <strong>Formatos recomendados: .txt</strong><br>
-            Arquivos PDF e DOC/DOCX contêm bytes binários que não podem ser lidos diretamente pelo navegador como texto. Para indexar corretamente, converta para <strong>.txt</strong> primeiro (copie e cole o conteúdo em um editor de texto e salve como .txt).
-          </div>
-
           <div class="up-drop" id="upDrop">
             <input type="file" id="upFileInput" accept=".txt,.pdf,.doc,.docx" multiple onchange="addToQueue(this.files)" />
             <div class="up-drop-icon">📁</div>
-            <div class="up-drop-text">
-              <strong>Clique para selecionar</strong> ou arraste os arquivos aqui<br>
-              TXT (recomendado) &nbsp;·&nbsp; PDF &nbsp;·&nbsp; DOC &nbsp;·&nbsp; DOCX
-            </div>
+            <div class="up-drop-text"><strong>Clique para selecionar</strong> ou arraste os arquivos aqui<br>PDF · DOC · DOCX · TXT</div>
           </div>
 
           <div class="up-queue" id="upQueue" style="display:none"></div>
           <div class="up-actions" id="upActions" style="display:none">
-            <button class="up-send-btn" id="upSendBtn" onclick="sendToSupabase()">
-              Enviar para Base de Conhecimento
-            </button>
+            <button class="up-send-btn" id="upSendBtn" onclick="sendToSupabase()">Enviar para Base de Conhecimento</button>
             <button class="up-clear-btn" onclick="clearQueue()">Limpar</button>
           </div>
           <div class="up-result-msg" id="upResultMsg"></div>
-          <div class="up-tip">
-            💡 Após o envio, os documentos são fragmentados em chunks, vetorizados com Gemini Embeddings e salvos no Supabase pgvector. Em seguida, ficam disponíveis para consulta no <strong>Chat Jurídico</strong>.
-          </div>
+          <div class="up-tip">💡 Após o envio, os documentos são fragmentados em chunks, vetorizados e salvos no Supabase pgvector. Ficam disponíveis para consulta no <strong>Chat Jurídico</strong> e <strong>Comparador</strong>.</div>
         </div>
       </div>
     </div>
 
-  </div><!-- /content -->
-</div><!-- /main -->
-</div><!-- /appContent -->
+  </div>
+</div>
+</div>
 
 <script>
 // ══════════════════════════════════════════════
 // CONFIGURAÇÃO
 // ══════════════════════════════════════════════
-const SUPABASE_URL       = 'https://hnhfbjuedesmkxrmmfan.supabase.co';
-const SUPABASE_ANON_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhuaGZianVlZGVzbWt4cm1tZmFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5OTcwMzYsImV4cCI6MjA4ODU3MzAzNn0.MemLsn-_uLOlo7YpK0u7ulRxuvMVHMIUJyKNv20jocY';
-const FUNCTIONS_URL      = `${SUPABASE_URL}/functions/v1`;
-const ALLOWED_DOMAIN     = '@barburcarneiro.com.br';
-const SESSION_KEY        = 'bca_session';
-
-let debugMode = false;
+const SUPABASE_URL      = 'https://hnhfbjuedesmkxrmmfan.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhuaGZianVlZGVzbWt4cm1tZmFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5OTcwMzYsImV4cCI6MjA4ODU3MzAzNn0.MemLsn-_uLOlo7YpK0u7ulRxuvMVHMIUJyKNv20jocY';
+const FUNCTIONS_URL     = `${SUPABASE_URL}/functions/v1`;
+const ALLOWED_DOMAIN    = '@barburcarneiro.com.br';
+const SESSION_KEY       = 'bca_session';
 
 // ══════════════════════════════════════════════
-// SESSÃO — persiste em sessionStorage
+// SESSÃO
 // ══════════════════════════════════════════════
 function saveSession(token, email) {
   try { sessionStorage.setItem(SESSION_KEY, JSON.stringify({ token, email })); } catch(e) {}
@@ -526,79 +424,64 @@ function clearSession() {
 }
 
 // ══════════════════════════════════════════════
-// CHAMADA À EDGE FUNCTION — FIX PRINCIPAL
+// CHAMADA À EDGE FUNCTION
 // ══════════════════════════════════════════════
 async function callEdgeFunction(fnName, body) {
   const session = loadSession();
-
   const headers = {
     'Content-Type': 'application/json',
     'apikey': SUPABASE_ANON_KEY,
+    'Authorization': `Bearer ${session?.token || SUPABASE_ANON_KEY}`
   };
-  if (session?.token) {
-    headers['Authorization'] = `Bearer ${session.token}`;
-  } else {
-    headers['Authorization'] = `Bearer ${SUPABASE_ANON_KEY}`;
-  }
-
   const res = await fetch(`${FUNCTIONS_URL}/${fnName}`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(body),
+    method: 'POST', headers, body: JSON.stringify(body)
   });
-
-  // Captura texto bruto para debug
   const rawText = await res.text();
   window._lastRawResponse = rawText;
   window._lastStatus = res.status;
-
   if (!res.ok) {
     let errMsg = `HTTP ${res.status}`;
-    try {
-      const errData = JSON.parse(rawText);
-      errMsg = errData.error || errData.message || errMsg;
-    } catch(e) {
-      errMsg = `${errMsg}: ${rawText.slice(0, 200)}`;
-    }
+    try { const d = JSON.parse(rawText); errMsg = d.error || d.message || errMsg; } catch(e) { errMsg = `${errMsg}: ${rawText.slice(0,200)}`; }
     throw new Error(errMsg);
   }
-
   let data;
-  try {
-    data = JSON.parse(rawText);
-  } catch(e) {
-    throw new Error(`Resposta inválida (não é JSON): ${rawText.slice(0, 200)}`);
-  }
-
+  try { data = JSON.parse(rawText); } catch(e) { throw new Error(`Resposta inválida: ${rawText.slice(0,200)}`); }
   if (data.error) throw new Error(data.error);
-
-  // Extrai campo de resposta — aceita múltiplos formatos:
-  // bca-chat  → { response: "texto da IA" }
-  // bca-embed → { response: "resumo", sucesso: true, chunks_salvos: N, ... }
   const reply = data.response ?? data.text ?? data.answer ?? data.content ?? data.result;
-  if (reply === undefined || reply === null) {
-    throw new Error(`Resposta sem campo 'response'. Campos recebidos: ${JSON.stringify(Object.keys(data))}`);
-  }
-
+  if (reply === undefined || reply === null) throw new Error(`Resposta sem campo 'response'. Campos: ${JSON.stringify(Object.keys(data))}`);
   return reply;
 }
 
+// Versão que retorna o objeto completo (para list-docs)
+async function callEdgeFunctionRaw(fnName, body) {
+  const session = loadSession();
+  const headers = {
+    'Content-Type': 'application/json',
+    'apikey': SUPABASE_ANON_KEY,
+    'Authorization': `Bearer ${session?.token || SUPABASE_ANON_KEY}`
+  };
+  const res = await fetch(`${FUNCTIONS_URL}/${fnName}`, {
+    method: 'POST', headers, body: JSON.stringify(body)
+  });
+  const rawText = await res.text();
+  if (!res.ok) throw new Error(`HTTP ${res.status}: ${rawText.slice(0,200)}`);
+  return JSON.parse(rawText);
+}
+
 // ══════════════════════════════════════════════
-// VERIFICAÇÃO DE CONEXÃO — usa POST, não OPTIONS
+// CONEXÃO
 // ══════════════════════════════════════════════
 async function checkConnection() {
   const statusEl = document.getElementById('llmStatus');
   statusEl.innerHTML = '⏳ Verificando Groq...';
   statusEl.style.color = '';
   try {
-    // Envia uma pergunta mínima para testar a função real
-    const reply = await callEdgeFunction('bca-chat-groq', { message: 'ping', mode: 'chat' });
+    await callEdgeFunction('bca-chat-groq', { message: 'ping', mode: 'chat' });
     statusEl.innerHTML = '🟢 &nbsp;Groq · Llama 3.3 Conectado';
     statusEl.style.color = '#7ab87a';
   } catch(err) {
     statusEl.innerHTML = '🔴 &nbsp;Groq Indisponível';
     statusEl.style.color = '#d07a7a';
-    console.warn('[BCA] checkConnection falhou:', err.message);
   }
 }
 
@@ -620,78 +503,47 @@ function switchTab(p, el) {
 // ══════════════════════════════════════════════
 // CHAT
 // ══════════════════════════════════════════════
-function handleKey(e) {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-}
-function autoResize(el) {
-  el.style.height = 'auto';
-  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
-}
-function useChip(el) {
-  document.getElementById('chatInput').value = el.textContent.trim();
-  sendMessage();
-}
+function handleKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
+function autoResize(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 120) + 'px'; }
+function useChip(el) { document.getElementById('chatInput').value = el.textContent.trim(); sendMessage(); }
 function showError(msg) {
   const b = document.getElementById('errorBanner');
-  b.textContent = '⚠️ ' + msg;
-  b.classList.add('show');
+  b.textContent = '⚠️ ' + msg; b.classList.add('show');
   setTimeout(() => b.classList.remove('show'), 8000);
 }
 function toggleDebug() {
   const panel = document.getElementById('debugPanel');
-  const status = document.getElementById('debugStatus');
-  if (panel.classList.contains('show')) {
-    panel.classList.remove('show');
-    return;
-  }
-  const raw = window._lastRawResponse || '(sem dados ainda)';
-  const st  = window._lastStatus || '—';
-  panel.textContent = `HTTP ${st}\n\n${raw}`;
+  if (panel.classList.contains('show')) { panel.classList.remove('show'); return; }
+  panel.textContent = `HTTP ${window._lastStatus || '—'}\n\n${window._lastRawResponse || '(sem dados)'}`;
   panel.classList.add('show');
-  status.textContent = `HTTP ${st}`;
+  document.getElementById('debugStatus').textContent = `HTTP ${window._lastStatus || '—'}`;
 }
 
-// ── Histórico de conversa da sessão ──────────────────────────
+// ── Histórico ──────────────────────────────────────────────
 const HIST_KEY = 'bca_chat_history';
 function saveHistory(role, content) {
   try {
-    const h = loadHistory();
-    h.push({ role, content, ts: Date.now() });
-    // Mantém últimas 40 mensagens
-    const trimmed = h.slice(-40);
-    sessionStorage.setItem(HIST_KEY, JSON.stringify(trimmed));
+    const h = loadHistory(); h.push({ role, content, ts: Date.now() });
+    sessionStorage.setItem(HIST_KEY, JSON.stringify(h.slice(-40)));
   } catch(e) {}
 }
-function loadHistory() {
-  try { return JSON.parse(sessionStorage.getItem(HIST_KEY) || '[]'); } catch(e) { return []; }
-}
-function clearHistory() {
-  try { sessionStorage.removeItem(HIST_KEY); } catch(e) {}
-}
+function loadHistory() { try { return JSON.parse(sessionStorage.getItem(HIST_KEY) || '[]'); } catch(e) { return []; } }
+function clearHistory() { try { sessionStorage.removeItem(HIST_KEY); } catch(e) {} }
 function clearHistoryAndReset() {
   clearHistory();
-  const c = document.getElementById('chatMessages');
-  c.innerHTML = `
-    <div class="message">
-      <div class="msg-av ai">BCA</div>
-      <div>
-        <div class="msg-bubble">
-          <div class="welcome-h">Assistente Jurídico BCA</div>
-          <div style="font-size:0.84rem;color:var(--email-dark);line-height:1.7">Olá! Histórico limpo. Como posso ajudar?</div>
-        </div>
-        <div class="msg-source">🤖 Groq · Llama 3.3 · Base BCA</div>
-      </div>
-    </div>`;
+  document.getElementById('chatMessages').innerHTML = `
+    <div class="message"><div class="msg-av ai">BCA</div><div>
+      <div class="msg-bubble"><div class="welcome-h">Assistente Jurídico BCA</div>
+      <div style="font-size:0.84rem;color:var(--email-dark);line-height:1.7">Histórico limpo. Como posso ajudar?</div></div>
+      <div class="msg-source">🤖 Groq · Llama 3.3 · Base BCA</div>
+    </div></div>`;
   document.getElementById('debugRow').style.display = 'none';
   document.getElementById('debugPanel').classList.remove('show');
 }
 function restoreHistory() {
-  const h = loadHistory();
-  if (h.length === 0) return;
+  const h = loadHistory(); if (h.length === 0) return;
   const c = document.getElementById('chatMessages');
-  // Remove mensagem de boas-vindas antes de restaurar
-  const welcome = c.querySelector('.message');
-  if (welcome && h.length > 0) welcome.remove();
+  const welcome = c.querySelector('.message'); if (welcome) welcome.remove();
   h.forEach(m => addMessageRaw(m.content, m.role === 'user'));
 }
 
@@ -699,77 +551,53 @@ function addMessageRaw(html, isUser) {
   const c = document.getElementById('chatMessages');
   const d = document.createElement('div');
   d.className = 'message' + (isUser ? ' user' : '');
-  const av  = `<div class="msg-av ${isUser ? 'user' : 'ai'}">${isUser ? 'EU' : 'BCA'}</div>`;
+  const av  = `<div class="msg-av ${isUser?'user':'ai'}">${isUser?'EU':'BCA'}</div>`;
   const bub = `<div class="msg-bubble">${html}</div>`;
   const src = !isUser ? `<div class="msg-source">🤖 Groq · Llama 3.3 · Base BCA</div>` : '';
   d.innerHTML = isUser ? `${bub}${av}` : `${av}<div>${bub}${src}</div>`;
-  c.appendChild(d);
-  c.scrollTop = c.scrollHeight;
+  c.appendChild(d); c.scrollTop = c.scrollHeight;
 }
-
-function addMessage(html, isUser) {
-  addMessageRaw(html, isUser);
-  saveHistory(isUser ? 'user' : 'assistant', html);
-}
+function addMessage(html, isUser) { addMessageRaw(html, isUser); saveHistory(isUser?'user':'assistant', html); }
 
 function addTyping() {
   const c = document.getElementById('chatMessages');
-  const d = document.createElement('div');
-  d.className = 'message'; d.id = 'typing';
+  const d = document.createElement('div'); d.className = 'message'; d.id = 'typing';
   d.innerHTML = `<div class="msg-av ai">BCA</div><div class="msg-bubble" style="color:var(--email-dark)">Consultando base de conhecimento<span id="dots">.</span></div>`;
-  c.appendChild(d);
-  c.scrollTop = c.scrollHeight;
+  c.appendChild(d); c.scrollTop = c.scrollHeight;
   let n = 0;
-  window._dotInterval = setInterval(() => {
-    const el = document.getElementById('dots');
-    if (el) el.textContent = ['.','..','...'][n++ % 3];
-  }, 400);
+  window._dotInterval = setInterval(() => { const el = document.getElementById('dots'); if (el) el.textContent = ['.','..','...'][n++%3]; }, 400);
 }
-function removeTyping() {
-  clearInterval(window._dotInterval);
-  const el = document.getElementById('typing');
-  if (el) el.remove();
-}
+function removeTyping() { clearInterval(window._dotInterval); const el = document.getElementById('typing'); if (el) el.remove(); }
 
 function fmt(text) {
   return text
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.*?)\*/g,   '<em>$1</em>')
-    .replace(/\n/g,          '<br>');
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/\n/g, '<br>');
 }
 
 async function sendMessage() {
   const input = document.getElementById('chatInput');
-  const text = input.value.trim();
-  if (!text) return;
-
+  const text = input.value.trim(); if (!text) return;
   addMessage(text, true);
-  input.value = '';
-  input.style.height = 'auto';
+  input.value = ''; input.style.height = 'auto';
   document.getElementById('sendBtn').disabled = true;
   addTyping();
-
-  // Mostra debug row a partir da primeira mensagem
   document.getElementById('debugRow').style.display = 'flex';
 
+  // Monta histórico para contexto multi-turno
+  const historico = loadHistory().slice(-6).map(m => ({ role: m.role, content: m.content }));
+
   try {
-    const reply = await callEdgeFunction('bca-chat-groq', { message: text, mode: 'chat' });
-    removeTyping();
-    addMessage(fmt(reply), false);
-
-    // Atualiza debug silenciosamente
+    const reply = await callEdgeFunction('bca-chat-groq', { message: text, mode: 'chat', historico });
+    removeTyping(); addMessage(fmt(reply), false);
     const panel = document.getElementById('debugPanel');
-    if (panel.classList.contains('show')) toggleDebug(); // refresh
-
+    if (panel.classList.contains('show')) toggleDebug();
   } catch(err) {
-    removeTyping();
-    // Mostra o erro E o raw response para diagnóstico
-    showError(err.message);
+    removeTyping(); showError(err.message);
     const panel = document.getElementById('debugPanel');
-    const raw = window._lastRawResponse || '(sem resposta)';
-    panel.textContent = `ERRO: ${err.message}\n\nHTTP ${window._lastStatus || '?'}\n\nResposta bruta:\n${raw}`;
+    panel.textContent = `ERRO: ${err.message}\n\nHTTP ${window._lastStatus||'?'}\n\n${window._lastRawResponse||''}`;
     panel.classList.add('show');
-    document.getElementById('debugRow').style.display = 'flex';
   } finally {
     document.getElementById('sendBtn').disabled = false;
   }
@@ -782,58 +610,42 @@ let currentMode = 'upload';
 
 function setMode(mode) {
   currentMode = mode;
-  const btnUp = document.getElementById('btnUpload');
-  const btnTx = document.getElementById('btnText');
-  const aUp   = document.getElementById('areaUpload');
-  const aTx   = document.getElementById('areaText');
-  if (mode === 'upload') {
-    btnUp.style.background = 'var(--black)'; btnUp.style.color = 'var(--fendi-light)';
-    btnTx.style.background = 'var(--email-light)'; btnTx.style.color = 'var(--email-dark)';
-    aUp.style.display = 'block'; aTx.style.display = 'none';
-  } else {
-    btnTx.style.background = 'var(--black)'; btnTx.style.color = 'var(--fendi-light)';
-    btnUp.style.background = 'var(--email-light)'; btnUp.style.color = 'var(--email-dark)';
-    aTx.style.display = 'flex'; aUp.style.display = 'none';
-    document.getElementById('manualText').focus();
-  }
+  const isUpload = mode === 'upload';
+  document.getElementById('btnUpload').style.background = isUpload ? 'var(--black)' : 'var(--email-light)';
+  document.getElementById('btnUpload').style.color      = isUpload ? 'var(--fendi-light)' : 'var(--email-dark)';
+  document.getElementById('btnText').style.background   = isUpload ? 'var(--email-light)' : 'var(--black)';
+  document.getElementById('btnText').style.color        = isUpload ? 'var(--email-dark)' : 'var(--fendi-light)';
+  document.getElementById('areaUpload').style.display   = isUpload ? 'block' : 'none';
+  document.getElementById('areaText').style.display     = isUpload ? 'none' : 'flex';
+  if (!isUpload) document.getElementById('manualText').focus();
   checkReady();
 }
-
 function onManualInput() {
   const v = document.getElementById('manualText').value;
   document.getElementById('charCount').textContent = v.length.toLocaleString('pt-BR') + ' caracteres';
   checkReady();
 }
-
 function checkReady() {
-  let ok = false;
-  if (currentMode === 'upload') ok = !!window._contractFile;
-  if (currentMode === 'text')   ok = document.getElementById('manualText').value.trim().length > 20;
+  const ok = currentMode === 'upload' ? !!window._contractFile : document.getElementById('manualText').value.trim().length > 20;
   const btn = document.getElementById('analyzeBtn');
-  btn.disabled = !ok;
-  btn.style.opacity = ok ? '1' : '0.3';
-  btn.style.cursor  = ok ? 'pointer' : 'not-allowed';
+  btn.disabled = !ok; btn.style.opacity = ok ? '1' : '0.3'; btn.style.cursor = ok ? 'pointer' : 'not-allowed';
 }
-
 function handleFile(input) {
   const f = input.files[0]; if (!f) return;
   window._contractFile = f;
   document.getElementById('fileName').textContent = f.name;
-  document.getElementById('fileSize').textContent = (f.size / 1024).toFixed(1) + ' KB';
+  document.getElementById('fileSize').textContent = (f.size/1024).toFixed(1) + ' KB';
   document.getElementById('fileCard').style.display = 'flex';
-  // Aviso para PDF/DOC
-  const isPdfOrDoc = /\.(pdf|doc|docx)$/i.test(f.name);
-  document.getElementById('pdfWarning').style.display = isPdfOrDoc ? 'block' : 'none';
+  document.getElementById('pdfWarning').style.display = /\.(pdf|doc|docx)$/i.test(f.name) ? 'block' : 'none';
   checkReady();
 }
 
-// drag-drop comparador
 const uz = document.getElementById('uploadZone');
 uz.addEventListener('dragover',  e => { e.preventDefault(); uz.style.borderColor='var(--fendi)'; uz.style.background='var(--fendi-dim)'; });
 uz.addEventListener('dragleave', ()=> { uz.style.borderColor=''; uz.style.background=''; });
 uz.addEventListener('drop', e => {
   e.preventDefault(); uz.style.borderColor=''; uz.style.background='';
-  const f = e.dataTransfer.files[0]; if(!f) return;
+  const f = e.dataTransfer.files[0]; if (!f) return;
   window._contractFile = f;
   document.getElementById('fileName').textContent = f.name;
   document.getElementById('fileSize').textContent = (f.size/1024).toFixed(1)+' KB';
@@ -842,33 +654,10 @@ uz.addEventListener('drop', e => {
   checkReady();
 });
 
-// Lê arquivo como texto UTF-8 (bom para .txt)
 function readFileAsText(file) {
   return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload  = e => resolve(e.target.result);
-    r.onerror = reject;
-    r.readAsText(file, 'UTF-8');
+    const r = new FileReader(); r.onload = e => resolve(e.target.result); r.onerror = reject; r.readAsText(file, 'UTF-8');
   });
-}
-
-// Lê arquivo como base64 (necessário para PDF/DOC/DOCX — são binários)
-function readFileAsBase64(file) {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload  = e => {
-      // resultado é "data:application/pdf;base64,AAAA..." — pega só o base64
-      const base64 = e.target.result.split(',')[1];
-      resolve(base64);
-    };
-    r.onerror = reject;
-    r.readAsDataURL(file);
-  });
-}
-
-// Detecta se o arquivo é binário (precisa de base64)
-function isBinaryFile(file) {
-  return /\.(pdf|doc|docx)$/i.test(file.name);
 }
 
 async function analyzeContract() {
@@ -876,212 +665,138 @@ async function analyzeContract() {
   const ld = document.getElementById('loadingResult');
   const ar = document.getElementById('analysisResult');
   const ldMsg = ld.querySelector('div:last-child');
-  rp.style.display = 'none';
-  ar.style.display = 'none';
-  ld.style.display = 'flex';
+  rp.style.display = 'none'; ar.style.display = 'none'; ld.style.display = 'flex';
 
   try {
     let contractText = '';
-
     if (currentMode === 'text') {
-      // ── Modo texto: usa direto ────────────────────────────────
       contractText = document.getElementById('manualText').value.trim();
-
     } else {
-      const f = window._contractFile;
-      if (!f) throw new Error('Nenhum arquivo selecionado.');
-
-      if (/\.txt$/i.test(f.name)) {
-        // ── TXT: lê direto no browser ─────────────────────────
-        contractText = await readFileAsText(f);
-
-      } else if (/\.(pdf|doc|docx)$/i.test(f.name)) {
-        // ── PDF/DOCX: extrai no browser via PDF.js — zero tokens de API
-        if (ldMsg) ldMsg.textContent = 'Extraindo texto do arquivo...';
-        contractText = await extractTextFromFile(f);
-
-      } else {
-        throw new Error('Formato não suportado. Use .txt, .pdf, .doc ou .docx.');
-      }
+      const f = window._contractFile; if (!f) throw new Error('Nenhum arquivo selecionado.');
+      if (ldMsg) ldMsg.textContent = 'Extraindo texto do arquivo...';
+      contractText = /\.txt$/i.test(f.name) ? await readFileAsText(f) : await extractTextFromFile(f);
     }
-
     contractText = (contractText || '').trim();
-    if (contractText.length < 20) {
-      throw new Error('Texto muito curto ou ilegível. Verifique o arquivo ou cole o texto manualmente na aba "Inserir Texto".');
-    }
+    if (contractText.length < 20) throw new Error('Texto muito curto ou ilegível.');
 
-    // ── Envia ao bca-chat-groq para comparação ────────────────
     if (ldMsg) ldMsg.textContent = 'Buscando cláusulas similares na base BCA...';
     const reply = await callEdgeFunction('bca-chat-groq', {
       message: `TEXTO FORNECIDO PARA COMPARAÇÃO:\n"""\n${contractText.slice(0, 8000)}\n"""`,
       mode: 'comparador'
     });
 
-    ld.style.display = 'none';
-    ar.style.display = 'flex';
-
-    // Detecta resposta de erro genérica (ex: "Sem resposta da IA" ou "sobrecarregado")
-    const isErrorReply = !reply || reply.length < 30 ||
-      reply.includes('sobrecarregado') || reply.includes('Sem resposta') ||
-      reply.includes('Verifique o campo debug');
-
-    document.getElementById('aiAnalysis').innerHTML = isErrorReply
-      ? `<span style="color:#b05a5a;">⚠️ ${reply || 'Sem resposta recebida.'}</span><br><span style="font-size:0.75rem;color:var(--email-dark);">Clique em 🔍 debug para ver detalhes.</span>`
+    ld.style.display = 'none'; ar.style.display = 'flex';
+    const isErr = !reply || reply.length < 30 || reply.includes('sobrecarregado') || reply.includes('Sem resposta');
+    document.getElementById('aiAnalysis').innerHTML = isErr
+      ? `<span style="color:#b05a5a;">⚠️ ${reply||'Sem resposta.'}</span>`
       : fmt(reply);
-
-    // Salva debug bruto sempre
-    const rawDebug = window._lastRawResponse || 'sem resposta bruta';
-    document.getElementById('compDebugPanel').textContent =
-      `STATUS HTTP: ${window._lastStatus ?? '?'}\n\nRESPOSTA BRUTA:\n${rawDebug}`;
+    document.getElementById('compDebugPanel').textContent = `STATUS: ${window._lastStatus}\n\n${window._lastRawResponse||''}`;
 
   } catch(err) {
-    ld.style.display = 'none';
-    ar.style.display = 'flex';
-    document.getElementById('aiAnalysis').innerHTML =
-      `<span style="color:#b05a5a;">❌ Erro: ${err.message}</span>`;
-    const rawDebug = window._lastRawResponse || 'sem resposta';
-    document.getElementById('compDebugPanel').textContent =
-      `ERRO: ${err.message}\n\nSTATUS HTTP: ${window._lastStatus ?? '?'}\n\nRESPOSTA BRUTA:\n${rawDebug}`;
+    ld.style.display = 'none'; ar.style.display = 'flex';
+    document.getElementById('aiAnalysis').innerHTML = `<span style="color:#b05a5a;">❌ ${err.message}</span>`;
+    document.getElementById('compDebugPanel').textContent = `ERRO: ${err.message}\n\n${window._lastRawResponse||''}`;
     document.getElementById('compDebugPanel').style.display = 'block';
   }
 }
-
 function toggleCompDebug() {
   const p = document.getElementById('compDebugPanel');
   p.style.display = p.style.display === 'none' ? 'block' : 'none';
 }
 
 // ══════════════════════════════════════════════
-// UPLOAD DE DOCUMENTOS — FIX: usa readAsText corretamente
+// PAINEL DE DOCUMENTOS DA RAG
+// Usa modo list-docs da edge function (service_role)
+// para listar bucket privado com status de indexação
 // ══════════════════════════════════════════════
-
-// ══════════════════════════════════════════════════════════
-// INDEXAR DOCUMENTOS DO BUCKET SUPABASE
-// ══════════════════════════════════════════════════════════
 let _bucketFiles = [];
 
 async function loadBucketFiles() {
-  const listEl  = document.getElementById('bucketList');
+  const listEl   = document.getElementById('bucketList');
   const resultEl = document.getElementById('bucketResult');
   resultEl.style.display = 'none';
-  listEl.innerHTML = '<div style="font-size:0.75rem;color:var(--email-dark);">⏳ Consultando bucket...</div>';
+  listEl.innerHTML = '<div style="font-size:0.75rem;color:var(--email-dark);">⏳ Consultando base...</div>';
 
   try {
-    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/list/documentos-bca`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-      },
-      body: JSON.stringify({ limit: 100, offset: 0, sortBy: { column: 'name', order: 'asc' } })
-    });
+    const data = await callEdgeFunctionRaw('bca-chat-groq', { mode: 'list-docs', message: 'list' });
+    if (data.error) throw new Error(data.error);
 
-    const files = await res.json();
+    const arquivos = data.arquivos || [];
+    // Mantém _bucketFiles no formato esperado por indexSingleBucketFile e indexAllBucket
+    _bucketFiles = arquivos.map(f => ({ name: f.nome, indexado: f.indexado, chunks: f.chunks }));
 
-    if (!Array.isArray(files) || files.length === 0) {
+    if (arquivos.length === 0) {
       listEl.innerHTML = '<div style="font-size:0.75rem;color:var(--email-dark);">Nenhum arquivo encontrado no bucket <code>documentos-bca</code>.</div>';
       return;
     }
 
-    _bucketFiles = files.filter(f => f.name && /\.(pdf|doc|docx|txt)$/i.test(f.name));
+    const total     = data.total;
+    const indexados = data.indexados;
+    const corStatus = indexados === total ? '#c0dac8' : '#f0d080';
+    const bgStatus  = indexados === total ? '#eef5f0' : '#fff8e6';
+    const txStatus  = indexados === total ? '#5a8a6a' : '#8a7020';
 
-    // Consulta quais já estão indexados no Supabase
-    let indexed = new Set();
-    try {
-      const qRes = await fetch(`${SUPABASE_URL}/rest/v1/documentos?select=nome_arquivo`, {
-        headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
-      });
-      const docs = await qRes.json();
-      if (Array.isArray(docs)) docs.forEach(d => indexed.add(d.nome_arquivo));
-    } catch(e) {}
-
-    listEl.innerHTML = _bucketFiles.map((f, i) => {
-      const jaIndexado = indexed.has(f.name);
-      return `
-      <div style="display:flex;align-items:center;gap:0.6rem;padding:0.45rem 0.6rem;background:var(--email-light);border-radius:6px;border:1px solid ${jaIndexado ? '#c0dac8' : 'var(--fendi-border)'};">
-        <span style="font-size:0.85rem;">${/\.pdf$/i.test(f.name) ? '📄' : /\.(doc|docx)$/i.test(f.name) ? '📝' : '📃'}</span>
-        <span style="font-size:0.74rem;color:var(--dark-gray);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${f.name}">${f.name}</span>
-        <span style="font-size:0.62rem;color:var(--email-dark);">${f.metadata?.size ? (f.metadata.size/1024).toFixed(0)+'KB' : ''}</span>
-        ${jaIndexado
-          ? `<span style="padding:0.2rem 0.55rem;background:#eef5f0;border:1px solid #c0dac8;border-radius:5px;font-size:0.6rem;font-family:'Montserrat',sans-serif;font-weight:700;color:#5a8a6a;white-space:nowrap;">✅ Na RAG</span>
-             <button onclick="reindexBucketFile('${f.name}', this)" title="Forçar reindexação"
-               style="padding:0.2rem 0.45rem;background:none;border:1px solid var(--fendi-border);border-radius:5px;font-size:0.6rem;color:var(--email-dark);cursor:pointer;">🔄</button>`
-          : `<button onclick="indexSingleBucketFile('${f.name}', this)"
-               style="padding:0.2rem 0.55rem;background:var(--fendi-dim);border:1px solid var(--fendi-border);border-radius:5px;font-size:0.62rem;font-family:'Montserrat',sans-serif;font-weight:700;color:var(--fendi);cursor:pointer;white-space:nowrap;">
-               Indexar
-             </button>`
+    listEl.innerHTML = `
+      <div style="font-size:0.72rem;padding:0.4rem 0.5rem;border-radius:6px;background:${bgStatus};border:1px solid ${corStatus};color:${txStatus};margin-bottom:0.35rem;">
+        📊 <strong>${indexados}/${total}</strong> documentos indexados na RAG
+      </div>
+      ${arquivos.map(f => `
+      <div style="display:flex;align-items:center;gap:0.6rem;padding:0.45rem 0.6rem;background:var(--email-light);border-radius:6px;border:1px solid ${f.indexado?'#c0dac8':'var(--fendi-border)'};">
+        <span style="font-size:0.85rem;">${/\.pdf$/i.test(f.nome)?'📄':/\.(doc|docx)$/i.test(f.nome)?'📝':'📃'}</span>
+        <span style="font-size:0.74rem;color:var(--dark-gray);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${f.nome}">${f.nome}</span>
+        ${f.tamanho_kb ? `<span style="font-size:0.62rem;color:var(--email-dark);">${f.tamanho_kb}KB</span>` : ''}
+        ${f.indexado
+          ? `<span style="padding:0.2rem 0.55rem;background:#eef5f0;border:1px solid #c0dac8;border-radius:5px;font-size:0.6rem;font-family:'Montserrat',sans-serif;font-weight:700;color:#5a8a6a;white-space:nowrap;" title="${f.chunks} chunks">✅ ${f.chunks} chunks</span>
+             <button onclick="reindexBucketFile('${f.nome}', this)" title="Forçar reindexação" style="padding:0.2rem 0.45rem;background:none;border:1px solid var(--fendi-border);border-radius:5px;font-size:0.6rem;color:var(--email-dark);cursor:pointer;">🔄</button>`
+          : `<button onclick="indexSingleBucketFile('${f.nome}', this)" style="padding:0.2rem 0.55rem;background:var(--fendi-dim);border:1px solid var(--fendi-border);border-radius:5px;font-size:0.62rem;font-family:'Montserrat',sans-serif;font-weight:700;color:var(--fendi);cursor:pointer;white-space:nowrap;">Indexar</button>`
         }
-      </div>`;
-    }).join('');
-    
-    const total = _bucketFiles.length;
-    const jaOk  = _bucketFiles.filter(f => indexed.has(f.name)).length;
-    listEl.insertAdjacentHTML('afterbegin', `
-      <div style="font-size:0.72rem;padding:0.4rem 0.5rem;border-radius:6px;background:${jaOk===total?'#eef5f0':'#fff8e6'};border:1px solid ${jaOk===total?'#c0dac8':'#f0d080'};color:${jaOk===total?'#5a8a6a':'#8a7020'};margin-bottom:0.35rem;">
-        📊 <strong>${jaOk}/${total}</strong> documentos indexados na RAG
-      </div>`);
+      </div>`).join('')}`;
 
   } catch(e) {
-    listEl.innerHTML = `<div style="font-size:0.75rem;color:#b05a5a;">Erro ao listar bucket: ${e.message}</div>`;
+    listEl.innerHTML = `<div style="font-size:0.75rem;color:#b05a5a;">Erro ao listar documentos: ${e.message}</div>`;
   }
 }
 
 async function reindexBucketFile(filename, btn) {
   if (!confirm(`Reindexar "${filename}"?\nOs chunks anteriores serão excluídos e recriados.`)) return;
   if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
-  // Deleta documento anterior (chunks em cascata)
   try {
+    const sess = loadSession();
+    const tok  = sess?.token || SUPABASE_ANON_KEY;
     await fetch(`${SUPABASE_URL}/rest/v1/documentos?nome_arquivo=eq.${encodeURIComponent(filename)}`, {
       method: 'DELETE',
-      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Prefer': 'return=minimal' }
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${tok}`, 'Prefer': 'return=minimal' }
     });
   } catch(e) {}
-  // Reindexar
-  const parentRow = btn?.closest('div[style*="display:flex"]');
-  const fakeBtn   = { textContent: '', disabled: false, style: {}, title: '' };
-  const res = await indexSingleBucketFile(filename, fakeBtn);
-  if (res.ok) {
-    if (btn) btn.closest('div[style*="display:flex"]')?.querySelector('span[style*="5a8a6a"]')?.remove();
-    setTimeout(() => loadBucketFiles(), 800);
-  } else {
-    if (btn) { btn.textContent = '❌'; btn.disabled = false; btn.title = res.erro; }
-  }
+  const res = await indexSingleBucketFile(filename, { textContent:'', disabled:false, style:{}, title:'' });
+  if (res.ok) { setTimeout(() => loadBucketFiles(), 800); }
+  else if (btn) { btn.textContent = '❌'; btn.disabled = false; btn.title = res.erro; }
 }
 
 async function indexSingleBucketFile(filename, btn) {
-  if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
+  if (btn && btn.textContent !== undefined) { btn.textContent = '⏳'; btn.disabled = true; }
   try {
-    // Baixa o arquivo do bucket
     const res = await fetch(`${SUPABASE_URL}/storage/v1/object/documentos-bca/${encodeURIComponent(filename)}`, {
       headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
     });
     if (!res.ok) throw new Error(`Erro ao baixar (HTTP ${res.status})`);
-
     const blob = await res.blob();
     const file = new File([blob], filename, { type: blob.type });
-
-    // Extrai texto no browser (zero tokens)
     const text = await extractTextFromFile(file);
     if (!text || text.length < 30) throw new Error('Texto extraído muito curto ou ilegível');
-
-    // Envia para bca-embed indexar
-    const reply = await callEdgeFunction('bca-embed', {
-      nome_arquivo: filename,
-      texto: text.slice(0, 50000)
-    });
-
-    if (btn) { btn.textContent = '✅'; btn.style.background = '#eef5f0'; btn.style.color = '#5a8a6a'; }
+    const reply = await callEdgeFunction('bca-embed', { nome_arquivo: filename, texto: text.slice(0, 50000) });
+    if (btn && btn.textContent !== undefined) { btn.textContent = '✅'; if(btn.style) { btn.style.background='#eef5f0'; btn.style.color='#5a8a6a'; } }
     return { ok: true, nome: filename, reply };
-
   } catch(e) {
-    if (btn) { btn.textContent = '❌'; btn.style.background = '#fdf0f0'; btn.style.color = '#b05a5a'; btn.disabled = false; btn.title = e.message; }
+    if (btn && btn.textContent !== undefined) { btn.textContent = '❌'; if(btn.style) { btn.style.background='#fdf0f0'; btn.style.color='#b05a5a'; } btn.disabled = false; btn.title = e.message; }
     return { ok: false, nome: filename, erro: e.message };
   }
 }
 
 async function indexAllBucket() {
-  if (_bucketFiles.length === 0) { await loadBucketFiles(); return; }
+  // Indexa apenas os não indexados
+  const naoIndexados = _bucketFiles.filter(f => !f.indexado);
+  if (naoIndexados.length === 0) { alert('Todos os documentos já estão indexados.'); return; }
 
   const btn      = document.getElementById('indexAllBtn');
   const progress = document.getElementById('bucketProgress');
@@ -1089,64 +804,42 @@ async function indexAllBucket() {
   const msg      = document.getElementById('bucketProgressMsg');
   const result   = document.getElementById('bucketResult');
 
-  btn.disabled = true;
-  btn.textContent = '⏳ Indexando...';
-  progress.style.display = 'block';
-  result.style.display   = 'none';
+  btn.disabled = true; btn.textContent = '⏳ Indexando...';
+  progress.style.display = 'block'; result.style.display = 'none';
 
-  const total = _bucketFiles.length;
+  const total = naoIndexados.length;
   let ok = 0, fail = 0, failList = [];
 
   for (let i = 0; i < total; i++) {
-    const f = _bucketFiles[i];
+    const f = naoIndexados[i];
     msg.textContent = `Indexando ${i+1}/${total}: ${f.name}`;
-    bar.style.width = `${Math.round(((i) / total) * 100)}%`;
-
-    // Localiza o botão individual na lista
-    const rowBtns = document.querySelectorAll('#bucketList button');
-    const rowBtn  = rowBtns[i] || null;
-
-    const res = await indexSingleBucketFile(f.name, rowBtn);
+    bar.style.width = `${Math.round((i/total)*100)}%`;
+    const res = await indexSingleBucketFile(f.name, null);
     if (res.ok) ok++; else { fail++; failList.push(f.name); }
-
-    // Delay entre chamadas para não estourar rate limit do embedding
     if (i < total - 1) await new Promise(r => setTimeout(r, 1500));
   }
 
-  bar.style.width = '100%';
-  msg.textContent = 'Concluído!';
-
+  bar.style.width = '100%'; msg.textContent = 'Concluído!';
   result.style.display = 'block';
   if (fail === 0) {
-    result.style.background = '#eef5f0';
-    result.style.border = '1px solid #c0dac8';
-    result.style.color = '#5a8a6a';
-    result.innerHTML = `✅ <strong>${ok} documento(s)</strong> indexados com sucesso! Já estão disponíveis no Chat e Comparador.`;
+    result.style.cssText = 'display:block;background:#eef5f0;border:1px solid #c0dac8;color:#5a8a6a;';
+    result.innerHTML = `✅ <strong>${ok} documento(s)</strong> indexados com sucesso!`;
   } else {
-    result.style.background = '#fff8e6';
-    result.style.border = '1px solid #f0d080';
-    result.style.color = '#8a7020';
+    result.style.cssText = 'display:block;background:#fff8e6;border:1px solid #f0d080;color:#8a7020;';
     result.innerHTML = `⚠️ <strong>${ok} ok</strong> · <strong>${fail} com erro:</strong><br>${failList.map(n=>`• ${n}`).join('<br>')}`;
   }
-
-  btn.disabled = false;
-  btn.textContent = '⚡ Indexar todos';
+  btn.disabled = false; btn.textContent = '⚡ Indexar não indexados';
+  setTimeout(() => loadBucketFiles(), 1000);
 }
 
-// Carrega lista automaticamente ao abrir a aba
-document.addEventListener('DOMContentLoaded', () => {
-  loadBucketFiles();
-});
-
+// ══════════════════════════════════════════════
+// UPLOAD DE DOCUMENTOS
+// ══════════════════════════════════════════════
 let uploadQueue = [];
-
 function addToQueue(files) {
-  Array.from(files).forEach(f => {
-    if (!uploadQueue.find(x => x.name === f.name)) uploadQueue.push(f);
-  });
+  Array.from(files).forEach(f => { if (!uploadQueue.find(x => x.name === f.name)) uploadQueue.push(f); });
   renderQueue();
 }
-
 function renderQueue() {
   const q = document.getElementById('upQueue');
   const a = document.getElementById('upActions');
@@ -1154,20 +847,18 @@ function renderQueue() {
   q.style.display = 'flex'; a.style.display = 'flex';
   q.innerHTML = uploadQueue.map((f, i) => `
     <div class="up-file-row" id="upRow-${i}">
-      <div class="up-file-icon">${f.name.endsWith('.pdf') ? '📕' : '📘'}</div>
+      <div class="up-file-icon">${f.name.endsWith('.pdf')?'📕':'📘'}</div>
       <div class="up-file-info">
         <div class="up-file-name" title="${f.name}">${f.name}</div>
-        <div class="up-file-size">${(f.size/1024).toFixed(1)} KB${/\.(pdf|doc|docx)$/i.test(f.name) ? ' &nbsp;<span style="color:#8a7020;font-size:0.65rem;">⚠️ binário</span>':''}</div>
+        <div class="up-file-size">${(f.size/1024).toFixed(1)} KB</div>
       </div>
       <span class="up-file-status status-wait" id="upStatus-${i}">Aguardando</span>
       <button class="up-remove" onclick="removeFromQueue(${i})" title="Remover">✕</button>
     </div>`).join('');
 }
-
 function removeFromQueue(i) { uploadQueue.splice(i,1); renderQueue(); }
 function clearQueue() {
-  uploadQueue = [];
-  renderQueue();
+  uploadQueue = []; renderQueue();
   document.getElementById('upResultMsg').className = 'up-result-msg';
   document.getElementById('upFileInput').value = '';
 }
@@ -1175,8 +866,7 @@ function clearQueue() {
 async function sendToSupabase() {
   if (uploadQueue.length === 0) return;
   const btn = document.getElementById('upSendBtn');
-  btn.disabled = true;
-  btn.textContent = 'Enviando...';
+  btn.disabled = true; btn.textContent = 'Enviando...';
   const msg = document.getElementById('upResultMsg');
   msg.className = 'up-result-msg';
   let ok=0, fail=0;
@@ -1184,170 +874,96 @@ async function sendToSupabase() {
   for (let i=0; i<uploadQueue.length; i++) {
     const f = uploadQueue[i];
     const statusEl = document.getElementById(`upStatus-${i}`);
-    statusEl.textContent = 'Lendo...';
-    statusEl.className = 'up-file-status status-send';
-
+    statusEl.textContent = 'Extraindo...'; statusEl.className = 'up-file-status status-send';
     try {
-      let payload;
-
-      // Todos os formatos: extrai texto no browser — zero tokens de API
-      statusEl.textContent = 'Extraindo texto...';
       const texto = await extractTextFromFile(f);
-      if (!texto || texto.trim().length < 50) throw new Error('Arquivo vazio ou ilegível. Verifique o conteúdo.');
-      payload = { texto: texto.slice(0, 150000), nome_arquivo: f.name, tipo: 'documento' };
-
+      if (!texto || texto.trim().length < 50) throw new Error('Arquivo vazio ou ilegível.');
       statusEl.textContent = 'Vetorizando...';
-
-      const reply = await callEdgeFunction('bca-embed', payload);
-
-      // callEdgeFunction retorna data.response (string de resumo)
-      statusEl.textContent = 'Indexado ✓';
-      statusEl.className = 'up-file-status status-ok';
-      // Mostra detalhes do resumo no tooltip
-      statusEl.title = reply;
+      const reply = await callEdgeFunction('bca-embed', { texto: texto.slice(0,150000), nome_arquivo: f.name, tipo: 'documento' });
+      statusEl.textContent = 'Indexado ✓'; statusEl.className = 'up-file-status status-ok'; statusEl.title = reply;
       ok++;
     } catch(e) {
-      statusEl.textContent = 'Erro ✕';
-      statusEl.className = 'up-file-status status-err';
-      statusEl.title = e.message;
-      console.error(`[BCA] upload erro em ${f.name}:`, e.message);
-      fail++;
+      statusEl.textContent = 'Erro ✕'; statusEl.className = 'up-file-status status-err'; statusEl.title = e.message; fail++;
     }
   }
-
-  btn.disabled = false;
-  btn.textContent = 'Enviar para Base de Conhecimento';
-
+  btn.disabled = false; btn.textContent = 'Enviar para Base de Conhecimento';
   if (ok>0 && fail===0) {
-    msg.textContent = `✓ ${ok} documento(s) indexado(s) com sucesso! Disponível no Chat Jurídico.`;
-    msg.className = 'up-result-msg ok';
+    msg.textContent = `✓ ${ok} documento(s) indexado(s) com sucesso!`; msg.className = 'up-result-msg ok';
   } else if (fail>0) {
-    msg.textContent = `${ok} indexado(s) com sucesso · ${fail} com erro. Passe o mouse sobre "Erro ✕" para ver detalhes.`;
-    msg.className = 'up-result-msg err';
+    msg.textContent = `${ok} indexado(s) · ${fail} com erro.`; msg.className = 'up-result-msg err';
   }
+  setTimeout(() => loadBucketFiles(), 1500);
 }
 
-// drag-drop upload panel
 const upDrop = document.getElementById('upDrop');
 upDrop.addEventListener('dragover',  e => { e.preventDefault(); upDrop.classList.add('dragover'); });
 upDrop.addEventListener('dragleave', ()=> upDrop.classList.remove('dragover'));
-upDrop.addEventListener('drop', e => {
-  e.preventDefault(); upDrop.classList.remove('dragover');
-  addToQueue(e.dataTransfer.files);
-});
+upDrop.addEventListener('drop', e => { e.preventDefault(); upDrop.classList.remove('dragover'); addToQueue(e.dataTransfer.files); });
 
 // ══════════════════════════════════════════════
 // AUTH
 // ══════════════════════════════════════════════
-function showLogin() {
-  document.getElementById('loginScreen').style.display = 'flex';
-  document.getElementById('appContent').style.display  = 'none';
-}
+function showLogin() { document.getElementById('loginScreen').style.display='flex'; document.getElementById('appContent').style.display='none'; }
 function showApp(email) {
-  document.getElementById('loginScreen').style.display = 'none';
-  document.getElementById('appContent').style.display  = 'flex';
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('appContent').style.display='flex';
   document.getElementById('userEmail').textContent = email;
-  checkConnection(); // FIX: usa POST real em vez de OPTIONS
+  checkConnection();
 }
 function showLoginError(msg) {
-  const el = document.getElementById('loginError');
-  el.textContent = msg; el.style.display = 'block';
-  document.getElementById('loginLoading').style.display = 'none';
-  document.getElementById('loginBtn').style.display = 'flex';
+  const el = document.getElementById('loginError'); el.textContent = msg; el.style.display='block';
+  document.getElementById('loginLoading').style.display='none';
+  document.getElementById('loginBtn').style.display='flex';
 }
 function loginWithGoogle() {
-  document.getElementById('loginBtn').style.display     = 'none';
-  document.getElementById('loginLoading').style.display = 'block';
-  document.getElementById('loginError').style.display   = 'none';
+  document.getElementById('loginBtn').style.display='none';
+  document.getElementById('loginLoading').style.display='block';
+  document.getElementById('loginError').style.display='none';
   const redirectTo = encodeURIComponent(window.location.href.split('#')[0]);
   window.location.href = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${redirectTo}`;
 }
 function logout() {
-  clearSession();
-  // Chama endpoint de signout do Supabase (sem SDK)
   const session = loadSession();
   if (session?.token) {
-    fetch(`${SUPABASE_URL}/auth/v1/logout`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${session.token}`, 'apikey': SUPABASE_ANON_KEY }
-    }).catch(()=>{});
+    fetch(`${SUPABASE_URL}/auth/v1/logout`, { method:'POST', headers:{ 'Authorization':`Bearer ${session.token}`, 'apikey':SUPABASE_ANON_KEY } }).catch(()=>{});
   }
-  clearSession();
-  showLogin();
+  clearSession(); showLogin();
 }
-
 function initAuth() {
-  // 1. Checa se há sessão salva (reload de página)
   const saved = loadSession();
-  if (saved?.token && saved?.email) {
-    showApp(saved.email);
-    return;
-  }
-
-  // 2. Checa se voltou do OAuth (hash com access_token)
+  if (saved?.token && saved?.email) { showApp(saved.email); return; }
   const hash = window.location.hash;
   if (hash.includes('access_token')) {
     try {
-      const params      = new URLSearchParams(hash.substring(1));
+      const params = new URLSearchParams(hash.substring(1));
       const accessToken = params.get('access_token');
-      // Limpa o hash da URL sem causar reload
       history.replaceState(null, '', window.location.pathname + window.location.search);
-
-      // Decodifica JWT
-      const b64     = accessToken.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
-      const payload = JSON.parse(atob(b64));
-      const email   = payload?.email || payload?.user_metadata?.email || '';
-
-      if (!email) { showLogin(); showLoginError('Não foi possível identificar o e-mail da conta.'); return; }
-
-      if (email.toLowerCase().endsWith(ALLOWED_DOMAIN)) {
-        saveSession(accessToken, email); // FIX: persiste sessão
-        showApp(email);
-      } else {
-        showLogin();
-        showLoginError(`⛔ Acesso negado.\nApenas contas ${ALLOWED_DOMAIN} têm permissão.\nVocê tentou: ${email}`);
-      }
-    } catch(err) {
-      showLogin();
-      showLoginError('Erro ao processar login: ' + err.message);
-    }
+      const payload = JSON.parse(atob(accessToken.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
+      const email = payload?.email || payload?.user_metadata?.email || '';
+      if (!email) { showLogin(); showLoginError('Não foi possível identificar o e-mail.'); return; }
+      if (email.toLowerCase().endsWith(ALLOWED_DOMAIN)) { saveSession(accessToken, email); showApp(email); }
+      else { showLogin(); showLoginError(`⛔ Acesso negado.\nApenas contas ${ALLOWED_DOMAIN}.\nTentou: ${email}`); }
+    } catch(err) { showLogin(); showLoginError('Erro ao processar login: ' + err.message); }
     return;
   }
-
-  // 3. Sem sessão e sem hash → tela de login
   showLogin();
 }
-
 initAuth();
 
-// ── Anti-pausa Supabase (ping a cada 3 dias via localStorage) ────
+// ── Anti-pausa Supabase ───────────────────────
 (function antiPausa() {
-  const KEY      = 'bca_last_ping';
-  const INTERVAL = 3 * 24 * 60 * 60 * 1000; // 3 dias em ms
-  const now      = Date.now();
-  let lastPing   = 0;
-  try { lastPing = parseInt(localStorage.getItem(KEY) || '0'); } catch(e) {}
-
-  if (now - lastPing > INTERVAL) {
-    // Faz um ping leve na Edge Function para manter o projeto ativo
-    fetch(`${FUNCTIONS_URL}/bca-chat-groq`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
-      body: JSON.stringify({ message: 'ping', mode: 'chat' })
-    }).then(() => {
-      try { localStorage.setItem(KEY, String(Date.now())); } catch(e) {}
-      console.log('[BCA] Anti-pausa ping enviado');
-    }).catch(() => {});
+  const KEY = 'bca_last_ping', INTERVAL = 3*24*60*60*1000, now = Date.now();
+  let last = 0; try { last = parseInt(localStorage.getItem(KEY)||'0'); } catch(e) {}
+  if (now - last > INTERVAL) {
+    fetch(`${FUNCTIONS_URL}/bca-chat-groq`, { method:'POST', headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY}, body:JSON.stringify({message:'ping',mode:'chat'}) })
+      .then(()=>{ try { localStorage.setItem(KEY, String(Date.now())); } catch(e){} }).catch(()=>{});
   }
 })();
 
-// ── Restaurar histórico da sessão ────────────────────────────────
+// ── Inicialização ─────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-  // Pequeno delay para garantir que o app já está visível
-  setTimeout(() => {
-    const saved = loadSession();
-    if (saved?.token) restoreHistory();
-  }, 300);
+  loadBucketFiles();
+  setTimeout(() => { const saved = loadSession(); if (saved?.token) restoreHistory(); }, 300);
 });
 </script>
 </body>
