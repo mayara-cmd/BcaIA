@@ -913,7 +913,7 @@ async function analyzeContract() {
     // ── Envia ao bca-chat-groq para comparação ────────────────
     if (ldMsg) ldMsg.textContent = 'Buscando cláusulas similares na base BCA...';
     const reply = await callEdgeFunction('bca-chat-groq', {
-      message: `TEXTO FORNECIDO PARA COMPARAÇÃO:\n"""\n${contractText.slice(0, 3000)}\n"""`,
+      message: `TEXTO FORNECIDO PARA COMPARAÇÃO:\n"""\n${contractText.slice(0, 8000)}\n"""`,
       mode: 'comparador'
     });
 
