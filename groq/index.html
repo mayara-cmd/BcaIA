@@ -343,6 +343,7 @@ async function callEdgeFunction(fn,body){
   const h={'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY,'Authorization':`Bearer ${s?.token||SUPABASE_ANON_KEY}`};
   const r=await fetch(`${FUNCTIONS_URL}/${fn}`,{method:'POST',headers:h,body:JSON.stringify(body)});
   const raw=await r.text();window._lastRawResponse=raw;window._lastStatus=r.status;
+  if(r.status===401){clearSession();showLogin();showLoginError('Sua sessão expirou. Faça login novamente.');throw new Error('Sessão expirada');}
   if(!r.ok){let e=`HTTP ${r.status}`;try{const d=JSON.parse(raw);e=d.error||d.message||e;}catch(x){e=`${e}: ${raw.slice(0,200)}`;}throw new Error(e);}
   let data;try{data=JSON.parse(raw);}catch(x){throw new Error(`Resposta inválida: ${raw.slice(0,200)}`);}
   if(data.error)throw new Error(data.error);
