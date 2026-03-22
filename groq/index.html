@@ -334,13 +334,49 @@ const FUNCTIONS_URL=`${SUPABASE_URL}/functions/v1`;
 const ALLOWED_DOMAIN='@barburcarneiro.com.br';
 const SESSION_KEY='bca_session';
 
-function saveSession(t,e){try{sessionStorage.setItem(SESSION_KEY,JSON.stringify({token:t,email:e}));}catch(x){}}
+function saveSession(t,e,refresh){try{sessionStorage.setItem(SESSION_KEY,JSON.stringify({token:t,email:e,refresh:refresh||null}));}catch(x){}}
 function loadSession(){try{return JSON.parse(sessionStorage.getItem(SESSION_KEY)||'null');}catch(x){return null;}}
 function clearSession(){try{sessionStorage.removeItem(SESSION_KEY);}catch(x){}}
 
+async function refreshSession(){
+  const s=loadSession();
+  if(!s?.refresh)return null;
+  try{
+    const r=await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY},
+      body:JSON.stringify({refresh_token:s.refresh})
+    });
+    if(!r.ok)return null;
+    const d=await r.json();
+    if(d.access_token){
+      saveSession(d.access_token,s.email,d.refresh_token||s.refresh);
+      return d.access_token;
+    }
+  }catch(x){}
+  return null;
+}
+
 async function callEdgeFunction(fn,body){
-  const h={'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY,'Authorization':`Bearer ${SUPABASE_ANON_KEY}`};
-  const r=await fetch(`${FUNCTIONS_URL}/${fn}`,{method:'POST',headers:h,body:JSON.stringify(body)});
+  let s=loadSession();
+  let token=s?.token||SUPABASE_ANON_KEY;
+  async function doFetch(t){
+    const h={'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY,'Authorization':`Bearer ${t}`};
+    return fetch(`${FUNCTIONS_URL}/${fn}`,{method:'POST',headers:h,body:JSON.stringify(body)});
+  }
+  let r=await doFetch(token);
+  // Se 401, tenta renovar token uma vez antes de pedir relogin
+  if(r.status===401){
+    const newToken=await refreshSession();
+    if(newToken){
+      r=await doFetch(newToken);
+    } else {
+      clearSession();
+      showLogin();
+      showLoginError('Sua sessão expirou. Faça login novamente.');
+      throw new Error('Sessão expirada');
+    }
+  }
   const raw=await r.text();window._lastRawResponse=raw;window._lastStatus=r.status;
   if(!r.ok){let e=`HTTP ${r.status}`;try{const d=JSON.parse(raw);e=d.error||d.message||e;}catch(x){e=`${e}: ${raw.slice(0,200)}`;}throw new Error(e);}
   let data;try{data=JSON.parse(raw);}catch(x){throw new Error(`Resposta inválida: ${raw.slice(0,200)}`);}
@@ -578,7 +614,8 @@ function initAuth(){
       const payload=JSON.parse(atob(at.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
       const email=payload?.email||payload?.user_metadata?.email||'';
       if(!email){showLogin();showLoginError('Não foi possível identificar o e-mail.');return;}
-      if(email.toLowerCase().endsWith(ALLOWED_DOMAIN)){saveSession(at,email);showApp(email);}
+      const rt=params.get('refresh_token');
+      if(email.toLowerCase().endsWith(ALLOWED_DOMAIN)){saveSession(at,email,rt);showApp(email);}
       else{showLogin();showLoginError(`⛔ Acesso negado.\nApenas contas ${ALLOWED_DOMAIN}.\nTentou: ${email}`);}
     }catch(err){showLogin();showLoginError('Erro ao processar login: '+err.message);}
     return;
