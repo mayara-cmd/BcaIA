@@ -1,995 +1,239 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BCA | Assistente Jurídico · Groq</title>
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<style>
-  :root {
-    --black:        #0a0a0a;
-    --dark-gray:    #444440;
-    --fendi:        #9d886d;
-    --fendi-light:  #e3ddca;
-    --green-gray:   #d0dbca;
-    --email-dark:   #8d8d8d;
-    --email-light:  #f7f7f7;
-    --white:        #ffffff;
-    --fendi-dim:    rgba(157,136,109,0.1);
-    --fendi-border: rgba(157,136,109,0.22);
-  }
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { background:var(--email-light); color:var(--dark-gray); font-family:'Lato',sans-serif; height:100vh; display:flex; flex-direction:column; overflow:hidden; }
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-  .topbar { display:flex; align-items:center; justify-content:space-between; padding:0 2rem; height:56px; background:var(--black); flex-shrink:0; }
-  .logo { display:flex; align-items:center; gap:14px; }
-  .logo-mark { font-family:'Montserrat',sans-serif; font-weight:700; font-size:1.3rem; color:var(--fendi-light); letter-spacing:0.12em; }
-  .logo-div { width:1px; height:18px; background:#333; }
-  .logo-sub { font-family:'Lato',sans-serif; font-weight:300; font-size:0.7rem; color:var(--email-dark); letter-spacing:0.2em; text-transform:uppercase; }
-  .privacy-badge { display:flex; align-items:center; gap:7px; font-size:0.73rem; color:var(--email-dark); }
-  .pdot { width:7px; height:7px; border-radius:50%; background:var(--green-gray); animation:pulse 2.5s infinite; }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+const GEMINI_KEY  = Deno.env.get('GEMINI_API_KEY');
+const EMBED_URL   = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent';
+const GEMINI_URL  = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
 
-  .main { display:flex; flex:1; overflow:hidden; }
+const cors = {
+  'Access-Control-Allow-Origin':  '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
 
-  .sidebar { width:228px; background:var(--white); border-right:1px solid var(--fendi-border); display:flex; flex-direction:column; flex-shrink:0; }
-  .sb-section { padding:1.5rem 1rem 0.5rem; }
-  .sb-label { font-family:'Montserrat',sans-serif; font-size:0.6rem; font-weight:700; letter-spacing:0.22em; text-transform:uppercase; color:var(--fendi); padding:0 0.5rem; margin-bottom:0.6rem; }
-  .nav-item { display:flex; align-items:center; gap:9px; padding:0.58rem 0.75rem; border-radius:7px; cursor:pointer; font-size:0.82rem; color:var(--email-dark); transition:all 0.16s; margin-bottom:2px; font-family:'Lato',sans-serif; border:1px solid transparent; }
-  .nav-item:hover { background:var(--email-light); color:var(--dark-gray); }
-  .nav-item.active { background:var(--fendi-dim); color:var(--fendi); border-color:var(--fendi-border); font-weight:700; }
-  .nav-icon { font-size:0.9rem; width:17px; text-align:center; }
-  .sb-footer { margin-top:auto; padding:1rem; border-top:1px solid var(--fendi-border); background:var(--email-light); }
-  .sb-footer-text { font-size:0.68rem; color:var(--email-dark); text-align:center; line-height:1.7; }
-
-  .content { flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0; }
-  .tabs { display:flex; padding:0 1rem; background:var(--white); border-bottom:1px solid var(--fendi-border); flex-shrink:0; overflow-x:auto; -webkit-overflow-scrolling:touch; }
-  .tabs::-webkit-scrollbar { display:none; }
-  .tab { padding:0.95rem 1.1rem; font-size:0.78rem; font-family:'Montserrat',sans-serif; font-weight:500; color:var(--email-dark); cursor:pointer; border-bottom:2px solid transparent; transition:all 0.16s; letter-spacing:0.04em; white-space:nowrap; flex-shrink:0; }
-  .tab:hover { color:var(--dark-gray); }
-  .tab.active { color:var(--fendi); border-bottom-color:var(--fendi); }
-
-  @media (max-width:768px) {
-    body { overflow:hidden; }
-    .topbar { padding:0 0.75rem; height:48px; }
-    .logo-sub { display:none; }
-    .privacy-badge span:not(.pdot) { display:none; }
-    .sidebar { display:none; }
-    .tabs { padding:0; }
-    .tab { padding:0.7rem 0.6rem; font-size:0.68rem; flex:1; text-align:center; }
-    .chat-messages { padding:0.75rem; }
-    .chat-input-area { padding:0.6rem 0.75rem; }
-    .msg-bubble { max-width:82vw; font-size:0.82rem; }
-    .comp-wrap { flex-direction:column !important; overflow-y:auto !important; }
-    .comp-left { width:100% !important; border-right:none !important; border-bottom:1px solid var(--fendi-border) !important; flex-shrink:0; }
-    .comp-right { flex:1; min-height:55vh; overflow-y:auto; }
-    .up-body { padding:0.75rem; }
-    .up-header { padding:0.75rem 1rem; }
-    .up-drop { padding:1.5rem 1rem; }
-  }
-
-  .panel { display:none; flex:1; overflow:hidden; }
-  .panel.active { display:flex; flex-direction:column; }
-
-  .chat-messages { flex:1; overflow-y:auto; padding:2rem; display:flex; flex-direction:column; gap:1.25rem; }
-  .chat-messages::-webkit-scrollbar { width:4px; }
-  .chat-messages::-webkit-scrollbar-thumb { background:var(--fendi-border); border-radius:2px; }
-  .message { display:flex; gap:0.875rem; max-width:820px; animation:fadeUp 0.25s ease; }
-  @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-  .message.user { flex-direction:row-reverse; align-self:flex-end; }
-  .msg-av { width:33px; height:33px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.65rem; font-family:'Montserrat',sans-serif; font-weight:700; flex-shrink:0; }
-  .msg-av.ai { background:var(--black); color:var(--fendi-light); }
-  .msg-av.user { background:var(--fendi-light); color:var(--dark-gray); }
-  .msg-bubble { background:var(--white); border:1px solid var(--fendi-border); border-radius:0 12px 12px 12px; padding:1rem 1.2rem; font-size:0.86rem; line-height:1.75; color:var(--dark-gray); max-width:600px; }
-  .message.user .msg-bubble { background:var(--fendi-light); border-color:var(--fendi-border); border-radius:12px 0 12px 12px; }
-  .msg-source { margin-top:0.45rem; font-size:0.69rem; color:var(--fendi); }
-  .welcome-h { font-family:'Montserrat',sans-serif; font-size:0.88rem; font-weight:600; color:var(--black); margin-bottom:0.5rem; }
-  .msg-bubble strong { font-weight:700; }
-  .chips { display:flex; flex-wrap:wrap; gap:0.4rem; margin-top:0.875rem; }
-  .chip { padding:0.28rem 0.7rem; border:1px solid var(--fendi-border); border-radius:20px; font-size:0.71rem; color:var(--fendi); cursor:pointer; transition:all 0.16s; background:var(--white); }
-  .chip:hover { background:var(--fendi); color:var(--white); border-color:var(--fendi); }
-  .chat-input-area { padding:1.2rem 2rem; border-top:1px solid var(--fendi-border); background:var(--white); flex-shrink:0; }
-  .input-wrap { display:flex; gap:0.7rem; align-items:flex-end; background:var(--email-light); border:1px solid var(--fendi-border); border-radius:10px; padding:0.7rem 1rem; transition:border-color 0.2s; }
-  .input-wrap:focus-within { border-color:var(--fendi); }
-  .chat-input { flex:1; background:none; border:none; outline:none; color:var(--dark-gray); font-family:'Lato',sans-serif; font-size:0.875rem; resize:none; max-height:120px; line-height:1.5; }
-  .chat-input::placeholder { color:var(--email-dark); }
-  .send-btn { background:var(--black); border:none; border-radius:8px; width:35px; height:35px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all 0.18s; flex-shrink:0; color:var(--fendi-light); font-size:0.88rem; }
-  .send-btn:hover { background:var(--dark-gray); }
-  .send-btn:disabled { opacity:0.4; cursor:not-allowed; }
-  .error-banner { background:#fdf0f0; border:1px solid #f0c0c0; border-radius:8px; padding:0.65rem 1rem; font-size:0.77rem; color:#b05a5a; margin-top:0.6rem; display:none; }
-  .error-banner.show { display:block; }
-
-  .debug-panel { background:#0d1117; border:1px solid #2a4a2a; border-radius:8px; padding:0.75rem 1rem; font-size:0.68rem; color:#7ec87e; font-family:'Courier New',monospace; margin-top:0.5rem; max-height:180px; overflow-y:auto; line-height:1.6; white-space:pre-wrap; word-break:break-all; display:none; }
-  .debug-panel.show { display:block; }
-  .debug-row { display:flex; align-items:center; gap:8px; margin-top:0.3rem; }
-  .debug-toggle-btn { background:none; border:1px solid #2a3a2a; color:#4a7a4a; font-size:0.62rem; font-family:'Courier New',monospace; padding:2px 8px; border-radius:4px; cursor:pointer; transition:all 0.15s; }
-  .debug-toggle-btn:hover { border-color:var(--fendi); color:var(--fendi); }
-
-  @keyframes spin { to{transform:rotate(360deg)} }
-  .loading-ring { width:28px; height:28px; border:2px solid var(--fendi-border); border-top-color:var(--fendi); border-radius:50%; animation:spin 0.9s linear infinite; }
-
-  .up-header { padding:1.5rem 2rem; background:var(--white); border-bottom:1px solid var(--fendi-border); flex-shrink:0; }
-  .up-title { font-family:'Montserrat',sans-serif; font-size:0.85rem; font-weight:600; color:var(--dark-gray); margin-bottom:2px; }
-  .up-sub { font-size:0.75rem; color:var(--email-dark); }
-  .up-body { flex:1; overflow-y:auto; padding:2rem; display:flex; flex-direction:column; gap:1.25rem; max-width:700px; }
-  .up-drop { border:2px dashed var(--fendi-border); border-radius:12px; padding:3rem 2rem; text-align:center; cursor:pointer; transition:all 0.22s; position:relative; background:var(--email-light); }
-  .up-drop:hover, .up-drop.dragover { border-color:var(--fendi); background:var(--fendi-dim); }
-  .up-drop input { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
-  .up-drop-icon { font-size:2.5rem; margin-bottom:0.75rem; }
-  .up-drop-text { font-size:0.85rem; color:var(--email-dark); line-height:1.7; }
-  .up-drop-text strong { color:var(--fendi); }
-  .up-queue { display:flex; flex-direction:column; gap:0.6rem; }
-  .up-file-row { display:flex; align-items:center; gap:0.875rem; background:var(--white); border:1px solid var(--fendi-border); border-radius:8px; padding:0.8rem 1rem; }
-  .up-file-icon { font-size:1.3rem; flex-shrink:0; }
-  .up-file-info { flex:1; min-width:0; }
-  .up-file-name { font-size:0.82rem; font-weight:700; color:var(--dark-gray); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .up-file-size { font-size:0.71rem; color:var(--email-dark); margin-top:2px; }
-  .up-file-status { font-family:'Montserrat',sans-serif; font-size:0.62rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; padding:0.2rem 0.6rem; border-radius:4px; flex-shrink:0; }
-  .status-wait { background:var(--email-light); color:var(--email-dark); border:1px solid var(--fendi-border); }
-  .status-send { background:#ece9ff; color:#6b5fa0; border:1px solid #ccc8ee; }
-  .status-ok   { background:#eef5f0; color:#5a8a6a; border:1px solid #c0dac8; }
-  .status-err  { background:#fdf0f0; color:#b05a5a; border:1px solid #f0c0c0; }
-  .up-remove { background:none; border:none; color:var(--email-dark); cursor:pointer; font-size:1rem; padding:0.2rem; transition:color 0.16s; flex-shrink:0; }
-  .up-remove:hover { color:#b05a5a; }
-  .up-actions { display:flex; gap:0.75rem; }
-  .up-send-btn { flex:1; padding:0.83rem; background:var(--black); color:var(--fendi-light); border:none; border-radius:8px; font-family:'Montserrat',sans-serif; font-size:0.74rem; font-weight:700; letter-spacing:0.1em; cursor:pointer; transition:all 0.18s; text-transform:uppercase; }
-  .up-send-btn:hover { background:var(--dark-gray); }
-  .up-send-btn:disabled { opacity:0.3; cursor:not-allowed; }
-  .up-clear-btn { padding:0.83rem 1.2rem; background:none; border:1px solid var(--fendi-border); color:var(--fendi); border-radius:8px; font-family:'Montserrat',sans-serif; font-size:0.74rem; font-weight:600; cursor:pointer; transition:all 0.18s; }
-  .up-clear-btn:hover { background:var(--fendi-dim); }
-  .up-tip { background:var(--fendi-dim); border:1px solid var(--fendi-border); border-radius:8px; padding:0.85rem 1rem; font-size:0.77rem; color:var(--fendi); line-height:1.6; }
-  .up-result-msg { padding:0.75rem 1rem; border-radius:8px; font-size:0.8rem; display:none; }
-  .up-result-msg.ok  { background:#eef5f0; color:#5a8a6a; border:1px solid #c0dac8; display:block; }
-  .up-result-msg.err { background:#fdf0f0; color:#b05a5a; border:1px solid #f0c0c0; display:block; }
-  .up-warn { background:#fff8e6; border:1px solid #f0d080; border-radius:8px; padding:0.85rem 1rem; font-size:0.77rem; color:#8a7020; line-height:1.6; }
-</style>
-<script>
-  pdfjsLib.GlobalWorkerOptions.workerSrc =
-    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
-
-  async function extractPDFInBrowser(file) {
-    const ab = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
-    const pages = [];
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const content = await page.getTextContent();
-      pages.push(content.items.map(item => item.str).join(" "));
-    }
-    return pages.join("\n\n");
-  }
-
-  async function extractDOCXInBrowser(file) {
-    const ab = await file.arrayBuffer();
-    const raw = new Uint8Array(ab).reduce((s,b) => s + String.fromCharCode(b), "");
-    const start = raw.indexOf("<w:body");
-    const end   = raw.indexOf("</w:body>");
-    if (start === -1) return raw.replace(/[^\x20-\x7E\xA0-\xFF\n]/g, " ").replace(/\s{3,}/g," ").trim();
-    return raw.slice(start, end + 9)
-      .replace(/<w:br[^>]*>/g,"\n").replace(/<w:p[ >]/g,"\n")
-      .replace(/<[^>]+>/g,"")
-      .replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">")
-      .replace(/\n{3,}/g,"\n\n").trim();
-  }
-
-  async function extractTextFromFile(file) {
-    let text = "";
-    if (/\.pdf$/i.test(file.name)) {
-      text = await extractPDFInBrowser(file);
-    } else if (/\.(doc|docx)$/i.test(file.name)) {
-      text = await extractDOCXInBrowser(file);
-    } else {
-      text = await new Promise((res,rej) => {
-        const r = new FileReader();
-        r.onload = e => res(e.target.result);
-        r.onerror = rej;
-        r.readAsText(file, "UTF-8");
-      });
-    }
-    return text.replace(/[ \t]{3,}/g," ").replace(/\n{4,}/g,"\n\n").trim();
-  }
-</script>
-</head>
-<body>
-
-<!-- ══ LOGIN ══ -->
-<div id="loginScreen" style="position:fixed;inset:0;z-index:9999;background:var(--black);display:flex;align-items:center;justify-content:center;font-family:'Lato',sans-serif;">
-  <div style="background:#111;border:1px solid rgba(157,136,109,0.25);border-radius:16px;padding:3rem 2.5rem;width:100%;max-width:400px;text-align:center;display:flex;flex-direction:column;gap:1.5rem;">
-    <div>
-      <div style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:2rem;color:var(--fendi-light);letter-spacing:0.12em;">BCA</div>
-      <div style="font-size:0.7rem;color:var(--email-dark);letter-spacing:0.2em;text-transform:uppercase;margin-top:4px;">Barbur Carneiro Advogados</div>
-    </div>
-    <div style="width:48px;height:1px;background:rgba(157,136,109,0.3);margin:0 auto;"></div>
-    <div>
-      <div style="font-family:'Montserrat',sans-serif;font-size:0.88rem;font-weight:600;color:var(--fendi-light);margin-bottom:0.5rem;">Assistente Jurídico</div>
-      <div style="font-size:0.78rem;color:var(--email-dark);line-height:1.6;">Acesso restrito à equipe BCA.<br>Faça login com sua conta Google corporativa.</div>
-    </div>
-    <button id="loginBtn" onclick="loginWithGoogle()" style="display:flex;align-items:center;justify-content:center;gap:12px;background:var(--white);color:#444;border:none;border-radius:10px;padding:0.875rem 1.5rem;font-family:'Montserrat',sans-serif;font-size:0.8rem;font-weight:600;cursor:pointer;transition:all 0.2s;letter-spacing:0.04em;width:100%;" onmouseover="this.style.background='var(--fendi-light)'" onmouseout="this.style.background='var(--white)'">
-      <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/></svg>
-      Entrar com Google
-    </button>
-    <div id="loginError" style="display:none;background:#2a1010;border:1px solid #6b2020;border-radius:8px;padding:0.75rem 1rem;font-size:0.78rem;color:#f08080;line-height:1.5;white-space:pre-line;"></div>
-    <div id="loginLoading" style="display:none;color:var(--email-dark);font-size:0.78rem;">Verificando acesso...</div>
-    <div style="font-size:0.68rem;color:#555;line-height:1.6;">🔒 Apenas contas @barburcarneiro.com.br<br>têm acesso a esta ferramenta.</div>
-  </div>
-</div>
-
-<!-- ══ APP ══ -->
-<div id="appContent" style="display:none;flex-direction:column;height:100vh;">
-
-<div class="topbar">
-  <div class="logo">
-    <div class="logo-mark">BCA</div>
-    <div style="background:#f55036;color:white;font-size:0.5rem;font-family:Montserrat,sans-serif;font-weight:700;padding:2px 6px;border-radius:4px;letter-spacing:0.08em;">GROQ</div>
-    <div class="logo-div"></div>
-    <div class="logo-sub">Barbur Carneiro Advogados</div>
-  </div>
-  <div class="privacy-badge">
-    <div class="pdot"></div>
-    <span id="llmStatus" style="font-size:0.7rem;">⏳ Verificando Groq...</span>
-    &nbsp;·&nbsp;
-    <span id="userEmail" style="font-size:0.7rem;">—</span>
-    <button onclick="logout()" style="margin-left:0.75rem;background:none;border:1px solid #333;color:var(--email-dark);border-radius:5px;padding:0.25rem 0.6rem;font-size:0.65rem;cursor:pointer;font-family:'Lato',sans-serif;transition:all 0.18s;letter-spacing:0.05em;" onmouseover="this.style.borderColor='var(--fendi)';this.style.color='var(--fendi)'" onmouseout="this.style.borderColor='#333';this.style.color='var(--email-dark)'">Sair</button>
-  </div>
-</div>
-
-<div class="main">
-  <div class="sidebar">
-    <div class="sb-section">
-      <div class="sb-label">Ferramentas</div>
-      <div class="nav-item active" onclick="switchTab('chat',this)"><span class="nav-icon">💬</span> Chat Jurídico</div>
-      <div class="nav-item" onclick="switchTab('comparador',this)"><span class="nav-icon">⚖️</span> Comparador de Contratos</div>
-    </div>
-    <div class="sb-section">
-      <div class="sb-label">Base de Conhecimento</div>
-      <div class="nav-item" onclick="switchTab('upload-docs',this)"><span class="nav-icon">📥</span> Adicionar Documentos</div>
-    </div>
-    <div class="sb-footer">
-      <div class="sb-footer-text">🔒 Dados processados via<br>Groq + Supabase BCA</div>
-    </div>
-  </div>
-
-  <div class="content">
-    <div class="tabs">
-      <div class="tab active" id="tab-chat" onclick="switchPanel('chat')">Chat Jurídico</div>
-      <div class="tab" id="tab-comparador" onclick="switchPanel('comparador')">Comparador de Contratos</div>
-      <div class="tab" id="tab-upload-docs" onclick="switchPanel('upload-docs')">Adicionar Documentos</div>
-    </div>
-
-    <!-- ══ CHAT ══ -->
-    <div class="panel active" id="panel-chat">
-      <div style="display:flex;align-items:center;justify-content:flex-end;padding:0.4rem 1.5rem 0;background:var(--white);border-bottom:1px solid var(--fendi-border);gap:0.5rem;flex-shrink:0;">
-        <button onclick="clearHistoryAndReset()" style="background:none;border:1px solid var(--fendi-border);border-radius:6px;padding:0.22rem 0.6rem;font-size:0.65rem;font-family:'Montserrat',sans-serif;color:var(--email-dark);cursor:pointer;letter-spacing:0.05em;">🗑️ Limpar histórico</button>
-      </div>
-      <div class="chat-messages" id="chatMessages">
-        <div class="message">
-          <div class="msg-av ai">BCA</div>
-          <div>
-            <div class="msg-bubble">
-              <div class="welcome-h">Assistente Jurídico BCA</div>
-              <div style="font-size:0.84rem;color:var(--email-dark);line-height:1.7">Olá! Estou conectado à base de conhecimento do escritório. Faça sua consulta jurídica abaixo.</div>
-              <div class="chips">
-                <div class="chip" onclick="useChip(this)">Quais são as penalidades do Código de Ética BCA?</div>
-                <div class="chip" onclick="useChip(this)">Como funciona o conflito de interesses no BCA?</div>
-                <div class="chip" onclick="useChip(this)">Explique o sigilo profissional no BCA</div>
-                <div class="chip" onclick="useChip(this)">Como funciona o canal de denúncias?</div>
-              </div>
-            </div>
-            <div class="msg-source">🤖 Groq · Llama 3.3 · Base BCA</div>
-          </div>
-        </div>
-      </div>
-      <div class="chat-input-area">
-        <div class="input-wrap">
-          <textarea class="chat-input" id="chatInput" placeholder="Digite sua consulta jurídica..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
-          <button class="send-btn" id="sendBtn" onclick="sendMessage()">➤</button>
-        </div>
-        <div class="error-banner" id="errorBanner"></div>
-        <div id="debugRow" class="debug-row" style="display:none;">
-          <button class="debug-toggle-btn" onclick="toggleDebug()">🔍 ver resposta bruta</button>
-          <span id="debugStatus" style="font-size:0.62rem;color:var(--email-dark);"></span>
-        </div>
-        <pre id="debugPanel" class="debug-panel"></pre>
-      </div>
-    </div>
-
-    <!-- ══ COMPARADOR ══ -->
-    <div class="panel" id="panel-comparador">
-      <div class="comp-wrap" style="display:flex;flex:1;overflow:hidden;">
-        <div class="comp-left" style="width:340px;flex-shrink:0;background:var(--white);border-right:1px solid var(--fendi-border);overflow-y:auto;padding:1.25rem;display:flex;flex-direction:column;gap:0.75rem;">
-          <div style="font-family:'Montserrat',sans-serif;font-size:0.65rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--fendi);">📤 Documento para Análise</div>
-          <div style="display:flex;border:1px solid var(--fendi-border);border-radius:8px;overflow:hidden;">
-            <button id="btnUpload" onclick="setMode('upload')" style="flex:1;padding:0.55rem;font-family:'Montserrat',sans-serif;font-size:0.68rem;font-weight:700;border:none;cursor:pointer;transition:all 0.18s;background:var(--black);color:var(--fendi-light);">📄 Upload</button>
-            <button id="btnText" onclick="setMode('text')" style="flex:1;padding:0.55rem;font-family:'Montserrat',sans-serif;font-size:0.68rem;font-weight:700;border:none;cursor:pointer;transition:all 0.18s;background:var(--email-light);color:var(--email-dark);">✏️ Inserir Texto</button>
-          </div>
-          <div id="areaUpload">
-            <div id="uploadZone" style="border:2px dashed var(--fendi-border);border-radius:10px;padding:1.25rem 1rem;text-align:center;cursor:pointer;transition:all 0.22s;position:relative;background:var(--email-light);margin-bottom:0.5rem;">
-              <input type="file" accept=".pdf,.doc,.docx,.txt" onchange="handleFile(this)" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;" />
-              <div style="font-size:1.5rem;margin-bottom:0.35rem;">📄</div>
-              <div style="font-size:0.75rem;color:var(--email-dark);line-height:1.5;"><strong style="color:var(--fendi);">Clique</strong> ou arraste aqui<br><span style="font-size:0.68rem;">TXT · PDF · DOC · DOCX</span></div>
-            </div>
-            <div id="fileCard" style="display:none;align-items:center;gap:0.6rem;background:var(--fendi-light);border:1px solid var(--fendi-border);border-radius:8px;padding:0.6rem 0.75rem;margin-bottom:0.5rem;">
-              <span style="font-size:1.1rem;">📄</span>
-              <div style="min-width:0;">
-                <div id="fileName" style="font-size:0.76rem;color:var(--dark-gray);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">—</div>
-                <div id="fileSize" style="font-size:0.66rem;color:var(--email-dark);">—</div>
-              </div>
-            </div>
-            <div id="pdfWarning" style="display:none;background:#eaf4ea;border:1px solid #90c090;border-radius:8px;padding:0.6rem 0.75rem;font-size:0.72rem;color:#2a6a2a;line-height:1.5;">✅ <strong>PDF/DOCX:</strong> texto extraído automaticamente.</div>
-          </div>
-          <div id="areaText" style="display:none;flex-direction:column;gap:0.35rem;flex:1;">
-            <textarea id="manualText" placeholder="Cole ou digite aqui a cláusula ou o texto do contrato que deseja comparar com os padrões BCA..." oninput="onManualInput()" style="width:100%;flex:1;min-height:200px;height:calc(100vh - 320px);max-height:60vh;background:var(--email-light);border:1px solid var(--fendi-border);border-radius:10px;padding:0.875rem;font-family:'Lato',sans-serif;font-size:0.83rem;color:var(--dark-gray);resize:vertical;outline:none;line-height:1.65;transition:border-color 0.18s;" onfocus="this.style.borderColor='var(--fendi)'" onblur="this.style.borderColor='var(--fendi-border)'"></textarea>
-            <div id="charCount" style="font-size:0.66rem;color:var(--email-dark);text-align:right;">0 caracteres</div>
-          </div>
-          <button id="analyzeBtn" onclick="analyzeContract()" disabled style="width:100%;padding:0.75rem;background:var(--black);color:var(--fendi-light);border:none;border-radius:8px;font-family:'Montserrat',sans-serif;font-size:0.71rem;font-weight:700;letter-spacing:0.08em;cursor:not-allowed;transition:all 0.18s;text-transform:uppercase;opacity:0.3;margin-top:auto;">🔍 Buscar e Comparar</button>
-          <div style="background:var(--email-light);border-radius:8px;padding:0.7rem 0.9rem;">
-            <div style="font-family:'Montserrat',sans-serif;font-size:0.6rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--dark-gray);margin-bottom:0.5rem;">Como funciona</div>
-            <div style="font-size:0.72rem;color:var(--email-dark);line-height:1.75;">🔍 Busca cláusulas similares nos docs BCA<br>⚖️ Compara redação e termos jurídicos<br>✏️ Identifica diferenças cláusula a cláusula<br>💡 Sugere adequações aos padrões BCA</div>
-          </div>
-        </div>
-        <div class="comp-right" style="flex:1;display:flex;flex-direction:column;overflow-y:auto;padding:1.5rem 1.75rem;min-width:0;">
-          <div style="font-family:'Montserrat',sans-serif;font-size:0.7rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--fendi);margin-bottom:1rem;">📊 Resultado da Comparação</div>
-          <div id="resultPlaceholder" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--email-dark);text-align:center;gap:1rem;">
-            <div style="font-size:2.5rem;opacity:0.3;">⚖️</div>
-            <div style="font-size:0.82rem;line-height:1.7;">Insira uma cláusula ou contrato<br>para buscar similares na base BCA<br>e identificar diferenças</div>
-          </div>
-          <div id="loadingResult" style="display:none;flex-direction:column;align-items:center;justify-content:center;gap:1rem;padding:4rem 2rem;">
-            <div class="loading-ring"></div>
-            <div style="font-size:0.78rem;color:var(--email-dark);">Buscando cláusulas similares na base BCA...</div>
-          </div>
-          <div id="analysisResult" style="display:none;flex-direction:column;gap:1rem;">
-            <div style="background:var(--white);border:1px solid var(--fendi-border);border-radius:10px;padding:1.25rem;">
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.9rem;">
-                <div style="font-family:'Montserrat',sans-serif;font-size:0.62rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--email-dark);">Análise Comparativa · Cláusulas BCA · Groq</div>
-                <button onclick="toggleCompDebug()" style="background:none;border:1px solid #2a3a2a;color:#4a7a4a;font-size:0.6rem;font-family:'Courier New',monospace;padding:2px 8px;border-radius:4px;cursor:pointer;">🔍 debug</button>
-              </div>
-              <div id="aiAnalysis" style="font-size:0.83rem;line-height:1.85;color:var(--dark-gray);"></div>
-              <pre id="compDebugPanel" style="display:none;margin-top:1rem;background:#0d1117;border:1px solid #2a4a2a;border-radius:8px;padding:0.75rem;font-size:0.65rem;color:#7ec87e;font-family:'Courier New',monospace;max-height:220px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;line-height:1.6;"></pre>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ══ UPLOAD DOCS ══ -->
-    <div class="panel" id="panel-upload-docs">
-      <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
-        <div class="up-header">
-          <div class="up-title">Adicionar Documentos à Base de Conhecimento</div>
-          <div class="up-sub">Envie documentos para indexação — ficam disponíveis no Chat Jurídico e Comparador</div>
-        </div>
-        <div class="up-body">
-          <div style="background:var(--white);border:1px solid var(--fendi-border);border-radius:10px;padding:1.1rem 1.25rem;">
-            <div style="font-family:'Montserrat',sans-serif;font-size:0.65rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--fendi);margin-bottom:0.75rem;">📦 Documentos na Base de Conhecimento</div>
-            <div style="font-size:0.77rem;color:var(--email-dark);margin-bottom:0.9rem;line-height:1.6;">Lista de arquivos no bucket e status de indexação na RAG. Arquivos sem indexação não são consultados pela IA.</div>
-            <div id="bucketList" style="display:flex;flex-direction:column;gap:0.4rem;margin-bottom:0.9rem;">
-              <div style="font-size:0.75rem;color:var(--email-dark);">⏳ Carregando lista...</div>
-            </div>
-            <div style="display:flex;gap:0.6rem;flex-wrap:wrap;">
-              <button onclick="loadBucketFiles()" style="padding:0.55rem 1rem;background:var(--email-light);border:1px solid var(--fendi-border);border-radius:7px;font-family:'Montserrat',sans-serif;font-size:0.68rem;font-weight:700;color:var(--fendi);cursor:pointer;">🔄 Atualizar lista</button>
-              <button id="indexAllBtn" onclick="indexAllBucket()" style="padding:0.55rem 1.2rem;background:var(--black);border:none;border-radius:7px;font-family:'Montserrat',sans-serif;font-size:0.68rem;font-weight:700;color:var(--fendi-light);cursor:pointer;letter-spacing:0.06em;">⚡ Indexar não indexados</button>
-            </div>
-            <div id="bucketProgress" style="display:none;margin-top:0.75rem;">
-              <div style="font-size:0.72rem;color:var(--email-dark);margin-bottom:0.4rem;" id="bucketProgressMsg">Indexando...</div>
-              <div style="background:var(--email-light);border-radius:4px;height:6px;overflow:hidden;">
-                <div id="bucketProgressBar" style="height:100%;background:var(--fendi);border-radius:4px;width:0%;transition:width 0.4s;"></div>
-              </div>
-            </div>
-            <div id="bucketResult" style="display:none;margin-top:0.75rem;padding:0.65rem 0.9rem;border-radius:8px;font-size:0.75rem;line-height:1.6;"></div>
-          </div>
-
-          <div class="up-drop" id="upDrop">
-            <input type="file" id="upFileInput" accept=".txt,.pdf,.doc,.docx" multiple onchange="addToQueue(this.files)" />
-            <div class="up-drop-icon">📁</div>
-            <div class="up-drop-text"><strong>Clique para selecionar</strong> ou arraste os arquivos aqui<br>PDF · DOC · DOCX · TXT</div>
-          </div>
-
-          <div class="up-queue" id="upQueue" style="display:none"></div>
-          <div class="up-actions" id="upActions" style="display:none">
-            <button class="up-send-btn" id="upSendBtn" onclick="sendToSupabase()">Enviar para Base de Conhecimento</button>
-            <button class="up-clear-btn" onclick="clearQueue()">Limpar</button>
-          </div>
-          <div class="up-result-msg" id="upResultMsg"></div>
-          <div class="up-tip">💡 Após o envio, os documentos são fragmentados em chunks, vetorizados e salvos no Supabase pgvector. Ficam disponíveis para consulta no <strong>Chat Jurídico</strong> e <strong>Comparador</strong>.</div>
-        </div>
-      </div>
-    </div>
-
-  </div>
-</div>
-</div>
-
-<script>
-// ══════════════════════════════════════════════
-// CONFIGURAÇÃO
-// ══════════════════════════════════════════════
-const SUPABASE_URL      = 'https://hnhfbjuedesmkxrmmfan.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhuaGZianVlZGVzbWt4cm1tZmFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5OTcwMzYsImV4cCI6MjA4ODU3MzAzNn0.MemLsn-_uLOlo7YpK0u7ulRxuvMVHMIUJyKNv20jocY';
-const FUNCTIONS_URL     = `${SUPABASE_URL}/functions/v1`;
-const ALLOWED_DOMAIN    = '@barburcarneiro.com.br';
-const SESSION_KEY       = 'bca_session';
-
-// ══════════════════════════════════════════════
-// SESSÃO
-// ══════════════════════════════════════════════
-function saveSession(token, email) {
-  try { sessionStorage.setItem(SESSION_KEY, JSON.stringify({ token, email })); } catch(e) {}
-}
-function loadSession() {
-  try { return JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null'); } catch(e) { return null; }
-}
-function clearSession() {
-  try { sessionStorage.removeItem(SESSION_KEY); } catch(e) {}
-}
-
-// ══════════════════════════════════════════════
-// CHAMADA À EDGE FUNCTION
-// ══════════════════════════════════════════════
-async function callEdgeFunction(fnName, body) {
-  const session = loadSession();
-  const headers = {
-    'Content-Type': 'application/json',
-    'apikey': SUPABASE_ANON_KEY,
-    'Authorization': `Bearer ${session?.token || SUPABASE_ANON_KEY}`
-  };
-  const res = await fetch(`${FUNCTIONS_URL}/${fnName}`, {
-    method: 'POST', headers, body: JSON.stringify(body)
-  });
-  const rawText = await res.text();
-  window._lastRawResponse = rawText;
-  window._lastStatus = res.status;
-  if (!res.ok) {
-    let errMsg = `HTTP ${res.status}`;
-    try { const d = JSON.parse(rawText); errMsg = d.error || d.message || errMsg; } catch(e) { errMsg = `${errMsg}: ${rawText.slice(0,200)}`; }
-    throw new Error(errMsg);
-  }
-  let data;
-  try { data = JSON.parse(rawText); } catch(e) { throw new Error(`Resposta inválida: ${rawText.slice(0,200)}`); }
-  if (data.error) throw new Error(data.error);
-  const reply = data.response ?? data.text ?? data.answer ?? data.content ?? data.result;
-  if (reply === undefined || reply === null) throw new Error(`Resposta sem campo 'response'. Campos: ${JSON.stringify(Object.keys(data))}`);
-  return reply;
-}
-
-// ══════════════════════════════════════════════
-// CONEXÃO
-// ══════════════════════════════════════════════
-function checkConnection() {
-  // Ping removido para economizar tokens
-  const statusEl = document.getElementById('llmStatus');
-  statusEl.innerHTML = '🟢 &nbsp;Groq · Llama 3.3';
-  statusEl.style.color = '#7ab87a';
-}
-
-// ══════════════════════════════════════════════
-// NAVEGAÇÃO
-// ══════════════════════════════════════════════
-function switchPanel(p) {
-  document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
-  document.getElementById('panel-' + p).classList.add('active');
-  document.getElementById('tab-'   + p).classList.add('active');
-}
-function switchTab(p, el) {
-  switchPanel(p);
-  document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
-  el.classList.add('active');
-}
-
-// ══════════════════════════════════════════════
-// CHAT
-// ══════════════════════════════════════════════
-function handleKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
-function autoResize(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 120) + 'px'; }
-function useChip(el) { document.getElementById('chatInput').value = el.textContent.trim(); sendMessage(); }
-function showError(msg) {
-  const b = document.getElementById('errorBanner');
-  b.textContent = '⚠️ ' + msg; b.classList.add('show');
-  setTimeout(() => b.classList.remove('show'), 8000);
-}
-function toggleDebug() {
-  const panel = document.getElementById('debugPanel');
-  if (panel.classList.contains('show')) { panel.classList.remove('show'); return; }
-  panel.textContent = `HTTP ${window._lastStatus || '—'}\n\n${window._lastRawResponse || '(sem dados)'}`;
-  panel.classList.add('show');
-  document.getElementById('debugStatus').textContent = `HTTP ${window._lastStatus || '—'}`;
-}
-
-// ── Histórico ──────────────────────────────────────────────
-const HIST_KEY = 'bca_chat_history';
-function saveHistory(role, content) {
-  try {
-    const h = loadHistory(); h.push({ role, content, ts: Date.now() });
-    sessionStorage.setItem(HIST_KEY, JSON.stringify(h.slice(-40)));
-  } catch(e) {}
-}
-function loadHistory() { try { return JSON.parse(sessionStorage.getItem(HIST_KEY) || '[]'); } catch(e) { return []; } }
-function clearHistory() { try { sessionStorage.removeItem(HIST_KEY); } catch(e) {} }
-function clearHistoryAndReset() {
-  clearHistory();
-  document.getElementById('chatMessages').innerHTML = `
-    <div class="message"><div class="msg-av ai">BCA</div><div>
-      <div class="msg-bubble"><div class="welcome-h">Assistente Jurídico BCA</div>
-      <div style="font-size:0.84rem;color:var(--email-dark);line-height:1.7">Histórico limpo. Como posso ajudar?</div></div>
-      <div class="msg-source">🤖 Groq · Llama 3.3 · Base BCA</div>
-    </div></div>`;
-  document.getElementById('debugRow').style.display = 'none';
-  document.getElementById('debugPanel').classList.remove('show');
-}
-function restoreHistory() {
-  const h = loadHistory(); if (h.length === 0) return;
-  const c = document.getElementById('chatMessages');
-  const welcome = c.querySelector('.message'); if (welcome) welcome.remove();
-  h.forEach(m => addMessageRaw(m.content, m.role === 'user'));
-}
-
-function addMessageRaw(html, isUser) {
-  const c = document.getElementById('chatMessages');
-  const d = document.createElement('div');
-  d.className = 'message' + (isUser ? ' user' : '');
-  const av  = `<div class="msg-av ${isUser?'user':'ai'}">${isUser?'EU':'BCA'}</div>`;
-  const bub = `<div class="msg-bubble">${html}</div>`;
-  const src = !isUser ? `<div class="msg-source">🤖 Groq · Llama 3.3 · Base BCA</div>` : '';
-  d.innerHTML = isUser ? `${bub}${av}` : `${av}<div>${bub}${src}</div>`;
-  c.appendChild(d); c.scrollTop = c.scrollHeight;
-}
-function addMessage(html, isUser) { addMessageRaw(html, isUser); saveHistory(isUser?'user':'assistant', html); }
-
-function addTyping() {
-  const c = document.getElementById('chatMessages');
-  const d = document.createElement('div'); d.className = 'message'; d.id = 'typing';
-  d.innerHTML = `<div class="msg-av ai">BCA</div><div class="msg-bubble" style="color:var(--email-dark)">Consultando base de conhecimento<span id="dots">.</span></div>`;
-  c.appendChild(d); c.scrollTop = c.scrollHeight;
-  let n = 0;
-  window._dotInterval = setInterval(() => { const el = document.getElementById('dots'); if (el) el.textContent = ['.','..','...'][n++%3]; }, 400);
-}
-function removeTyping() { clearInterval(window._dotInterval); const el = document.getElementById('typing'); if (el) el.remove(); }
-
-function fmt(text) {
-  return text
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.*?)\*/g, '<em>$1</em>')
-    .replace(/\n/g, '<br>');
-}
-
-async function sendMessage() {
-  const input = document.getElementById('chatInput');
-  const text = input.value.trim(); if (!text) return;
-  addMessage(text, true);
-  input.value = ''; input.style.height = 'auto';
-  document.getElementById('sendBtn').disabled = true;
-  addTyping();
-  document.getElementById('debugRow').style.display = 'flex';
-
-  const historico = loadHistory().slice(-3).map(m => ({ role: m.role, content: m.content }));
-
-  try {
-    const reply = await callEdgeFunction('bca-chat-groq', { message: text, mode: 'chat', historico });
-    removeTyping(); addMessage(fmt(reply), false);
-    const panel = document.getElementById('debugPanel');
-    if (panel.classList.contains('show')) toggleDebug();
-  } catch(err) {
-    removeTyping(); showError(err.message);
-    const panel = document.getElementById('debugPanel');
-    panel.textContent = `ERRO: ${err.message}\n\nHTTP ${window._lastStatus||'?'}\n\n${window._lastRawResponse||''}`;
-    panel.classList.add('show');
-  } finally {
-    document.getElementById('sendBtn').disabled = false;
-  }
-}
-
-// ══════════════════════════════════════════════
-// COMPARADOR
-// ══════════════════════════════════════════════
-let currentMode = 'upload';
-
-function setMode(mode) {
-  currentMode = mode;
-  const isUpload = mode === 'upload';
-  document.getElementById('btnUpload').style.background = isUpload ? 'var(--black)' : 'var(--email-light)';
-  document.getElementById('btnUpload').style.color      = isUpload ? 'var(--fendi-light)' : 'var(--email-dark)';
-  document.getElementById('btnText').style.background   = isUpload ? 'var(--email-light)' : 'var(--black)';
-  document.getElementById('btnText').style.color        = isUpload ? 'var(--email-dark)' : 'var(--fendi-light)';
-  document.getElementById('areaUpload').style.display   = isUpload ? 'block' : 'none';
-  document.getElementById('areaText').style.display     = isUpload ? 'none' : 'flex';
-  if (!isUpload) document.getElementById('manualText').focus();
-  checkReady();
-}
-function onManualInput() {
-  const v = document.getElementById('manualText').value;
-  document.getElementById('charCount').textContent = v.length.toLocaleString('pt-BR') + ' caracteres';
-  checkReady();
-}
-function checkReady() {
-  const ok = currentMode === 'upload' ? !!window._contractFile : document.getElementById('manualText').value.trim().length > 20;
-  const btn = document.getElementById('analyzeBtn');
-  btn.disabled = !ok; btn.style.opacity = ok ? '1' : '0.3'; btn.style.cursor = ok ? 'pointer' : 'not-allowed';
-}
-function handleFile(input) {
-  const f = input.files[0]; if (!f) return;
-  window._contractFile = f;
-  document.getElementById('fileName').textContent = f.name;
-  document.getElementById('fileSize').textContent = (f.size/1024).toFixed(1) + ' KB';
-  document.getElementById('fileCard').style.display = 'flex';
-  document.getElementById('pdfWarning').style.display = /\.(pdf|doc|docx)$/i.test(f.name) ? 'block' : 'none';
-  checkReady();
-}
-
-const uz = document.getElementById('uploadZone');
-uz.addEventListener('dragover',  e => { e.preventDefault(); uz.style.borderColor='var(--fendi)'; uz.style.background='var(--fendi-dim)'; });
-uz.addEventListener('dragleave', ()=> { uz.style.borderColor=''; uz.style.background=''; });
-uz.addEventListener('drop', e => {
-  e.preventDefault(); uz.style.borderColor=''; uz.style.background='';
-  const f = e.dataTransfer.files[0]; if (!f) return;
-  window._contractFile = f;
-  document.getElementById('fileName').textContent = f.name;
-  document.getElementById('fileSize').textContent = (f.size/1024).toFixed(1)+' KB';
-  document.getElementById('fileCard').style.display = 'flex';
-  document.getElementById('pdfWarning').style.display = /\.(pdf|doc|docx)$/i.test(f.name) ? 'block':'none';
-  checkReady();
-});
-
-function readFileAsText(file) {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader(); r.onload = e => resolve(e.target.result); r.onerror = reject; r.readAsText(file, 'UTF-8');
-  });
-}
-
-async function analyzeContract() {
-  const rp = document.getElementById('resultPlaceholder');
-  const ld = document.getElementById('loadingResult');
-  const ar = document.getElementById('analysisResult');
-  const ldMsg = ld.querySelector('div:last-child');
-  rp.style.display = 'none'; ar.style.display = 'none'; ld.style.display = 'flex';
-
-  try {
-    let contractText = '';
-    if (currentMode === 'text') {
-      contractText = document.getElementById('manualText').value.trim();
-    } else {
-      const f = window._contractFile; if (!f) throw new Error('Nenhum arquivo selecionado.');
-      if (ldMsg) ldMsg.textContent = 'Extraindo texto do arquivo...';
-      contractText = /\.txt$/i.test(f.name) ? await readFileAsText(f) : await extractTextFromFile(f);
-    }
-    contractText = (contractText || '').trim();
-    if (contractText.length < 20) throw new Error('Texto muito curto ou ilegível.');
-
-    if (ldMsg) ldMsg.textContent = 'Buscando cláusulas similares na base BCA...';
-    const reply = await callEdgeFunction('bca-chat-groq', {
-      message: `TEXTO FORNECIDO PARA COMPARAÇÃO:\n"""\n${contractText.slice(0, 3000)}\n"""`,
-      mode: 'comparador'
-    });
-
-    ld.style.display = 'none'; ar.style.display = 'flex';
-    const isErr = !reply || reply.length < 30 || reply.includes('sobrecarregado') || reply.includes('Sem resposta');
-    document.getElementById('aiAnalysis').innerHTML = isErr
-      ? `<span style="color:#b05a5a;">⚠️ ${reply||'Sem resposta.'}</span>`
-      : fmt(reply);
-    document.getElementById('compDebugPanel').textContent = `STATUS: ${window._lastStatus}\n\n${window._lastRawResponse||''}`;
-
-  } catch(err) {
-    ld.style.display = 'none'; ar.style.display = 'flex';
-    document.getElementById('aiAnalysis').innerHTML = `<span style="color:#b05a5a;">❌ ${err.message}</span>`;
-    document.getElementById('compDebugPanel').textContent = `ERRO: ${err.message}\n\n${window._lastRawResponse||''}`;
-    document.getElementById('compDebugPanel').style.display = 'block';
-  }
-}
-function toggleCompDebug() {
-  const p = document.getElementById('compDebugPanel');
-  p.style.display = p.style.display === 'none' ? 'block' : 'none';
-}
-
-// ══════════════════════════════════════════════
-// PAINEL DE DOCUMENTOS — CORRIGIDO
-// Busca direto na tabela documentos via REST API
-// e cruza com o bucket para mostrar status real
-// ══════════════════════════════════════════════
-let _bucketFiles = [];
-
-async function loadBucketFiles() {
-  const listEl   = document.getElementById('bucketList');
-  const resultEl = document.getElementById('bucketResult');
-  resultEl.style.display = 'none';
-  listEl.innerHTML = '<div style="font-size:0.75rem;color:var(--email-dark);">⏳ Consultando base...</div>';
-
-  try {
-    const sess = loadSession();
-    const tok  = sess?.token || SUPABASE_ANON_KEY;
-
-    // 1. Busca todos os registros da tabela documentos (sem limite de 4)
-    const tabelaRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/documentos?select=nome_arquivo&order=nome_arquivo.asc&limit=500`,
-      { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${tok}` } }
-    );
-    const tabelaRows = await tabelaRes.json();
-
-    // Conta chunks por arquivo
-    const chunksPorArquivo = {};
-    if (Array.isArray(tabelaRows)) {
-      tabelaRows.forEach(r => {
-        if (r.nome_arquivo) {
-          chunksPorArquivo[r.nome_arquivo] = (chunksPorArquivo[r.nome_arquivo] || 0) + 1;
-        }
-      });
-    }
-    const arquivosIndexados = Object.keys(chunksPorArquivo);
-
-    // 2. Busca arquivos no bucket Storage
-    const bucketRes = await fetch(`${SUPABASE_URL}/storage/v1/object/list/documentos-bca`, {
+// ── Embedding da query com retry em 429 ───────────────────────────
+async function gerarEmbedding(texto: string): Promise<number[] | null> {
+  for (let t = 0; t < 3; t++) {
+    const res = await fetch(`${EMBED_URL}?key=${GEMINI_KEY}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-      },
-      body: JSON.stringify({ limit: 200, offset: 0, sortBy: { column: 'name', order: 'asc' } })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model:    'models/gemini-embedding-001',
+        content:  { parts: [{ text: texto }] },
+        taskType: 'RETRIEVAL_QUERY',
+        outputDimensionality: 1536
+      })
     });
-    const bucketFiles = await bucketRes.json();
-    const bucketMap = {};
-    if (Array.isArray(bucketFiles)) {
-      bucketFiles
-        .filter(f => f.name && /\.(pdf|doc|docx|txt)$/i.test(f.name))
-        .forEach(f => {
-          bucketMap[f.name] = f.metadata?.size ? Math.round(f.metadata.size / 1024) : null;
-        });
+    if (res.status === 429) {
+      await new Promise(r => setTimeout(r, 5000 * (t + 1)));
+      continue;
     }
-    const arquivosBucket = Object.keys(bucketMap);
-
-    // 3. Mescla: todos os arquivos conhecidos (indexados + bucket), sem duplicar
-    const todos = [...new Set([...arquivosIndexados, ...arquivosBucket])].sort();
-    _bucketFiles = todos.map(nome => ({
-      name:     nome,
-      indexado: arquivosIndexados.includes(nome),
-      chunks:   chunksPorArquivo[nome] || 0
-    }));
-
-    if (todos.length === 0) {
-      listEl.innerHTML = '<div style="font-size:0.75rem;color:var(--email-dark);">Nenhum documento encontrado na base ou no bucket.</div>';
-      return;
-    }
-
-    const totalIndexados = arquivosIndexados.length;
-    const totalArquivos  = todos.length;
-    const corStatus = totalIndexados === totalArquivos ? '#c0dac8' : '#f0d080';
-    const bgStatus  = totalIndexados === totalArquivos ? '#eef5f0' : '#fff8e6';
-    const txStatus  = totalIndexados === totalArquivos ? '#5a8a6a' : '#8a7020';
-
-    listEl.innerHTML = `
-      <div style="font-size:0.72rem;padding:0.4rem 0.5rem;border-radius:6px;background:${bgStatus};border:1px solid ${corStatus};color:${txStatus};margin-bottom:0.35rem;">
-        📊 <strong>${totalIndexados}/${totalArquivos}</strong> documentos indexados na RAG
-      </div>
-      ${todos.map(nome => {
-        const indexado = arquivosIndexados.includes(nome);
-        const chunks   = chunksPorArquivo[nome] || 0;
-        const tamKb    = bucketMap[nome];
-        const noBucket = arquivosBucket.includes(nome);
-        const icone    = /\.pdf$/i.test(nome) ? '📄' : /\.(doc|docx)$/i.test(nome) ? '📝' : '📃';
-        const nomeSeguro = nome.replace(/'/g, "\\'");
-        return `
-        <div style="display:flex;align-items:center;gap:0.6rem;padding:0.45rem 0.6rem;background:var(--email-light);border-radius:6px;border:1px solid ${indexado?'#c0dac8':'var(--fendi-border)'};">
-          <span style="font-size:0.85rem;">${icone}</span>
-          <span style="font-size:0.74rem;color:var(--dark-gray);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${nome}">${nome}</span>
-          ${tamKb ? `<span style="font-size:0.62rem;color:var(--email-dark);">${tamKb}KB</span>` : ''}
-          ${indexado
-            ? `<span style="padding:0.2rem 0.55rem;background:#eef5f0;border:1px solid #c0dac8;border-radius:5px;font-size:0.6rem;font-family:'Montserrat',sans-serif;font-weight:700;color:#5a8a6a;white-space:nowrap;">✅ ${chunks} chunk${chunks!==1?'s':''}</span>
-               ${noBucket ? `<button onclick="reindexBucketFile('${nomeSeguro}', this)" title="Forçar reindexação" style="padding:0.2rem 0.45rem;background:none;border:1px solid var(--fendi-border);border-radius:5px;font-size:0.6rem;color:var(--email-dark);cursor:pointer;">🔄</button>` : ''}`
-            : `<button onclick="indexSingleBucketFile('${nomeSeguro}', this)" style="padding:0.2rem 0.55rem;background:var(--fendi-dim);border:1px solid var(--fendi-border);border-radius:5px;font-size:0.62rem;font-family:'Montserrat',sans-serif;font-weight:700;color:var(--fendi);cursor:pointer;white-space:nowrap;">Indexar</button>`
-          }
-        </div>`;
-      }).join('')}`;
-
-  } catch(e) {
-    listEl.innerHTML = `<div style="font-size:0.75rem;color:#b05a5a;">Erro ao listar documentos: ${e.message}</div>`;
+    const data = await res.json();
+    return data?.embedding?.values ?? null;
   }
+  return null;
 }
 
-async function reindexBucketFile(filename, btn) {
-  if (!confirm(`Reindexar "${filename}"?\nOs chunks anteriores serão excluídos e recriados.`)) return;
-  if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
+// ── Chamada Gemini com retry em 429 ───────────────────────────────
+async function chamarGemini(
+  systemPrompt: string,
+  userContent: string
+): Promise<{ texto: string | null; status: number; erro: any }> {
+  const DELAYS = [10000, 25000, 45000];
+
+  for (let t = 0; t < 3; t++) {
+    const res = await fetch(`${GEMINI_URL}?key=${GEMINI_KEY}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: systemPrompt }] },
+        contents: [{ role: 'user', parts: [{ text: userContent }] }],
+        generationConfig: {
+          temperature:     0.1,
+          maxOutputTokens: 8192
+        }
+      })
+    });
+
+    const data = await res.json();
+
+    if (res.status === 429) {
+      if (t < 2) { await new Promise(r => setTimeout(r, DELAYS[t])); continue; }
+      return { texto: null, status: 429, erro: data?.error };
+    }
+
+    const texto = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? null;
+    return { texto, status: res.status, erro: data?.error ?? null };
+  }
+
+  return { texto: null, status: 429, erro: 'Limite de requisições Gemini atingido.' };
+}
+
+// ══════════════════════════════════════════════════════════════════
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
+
+  function responder(body: object, status = 200) {
+    return new Response(JSON.stringify(body), {
+      status,
+      headers: { ...cors, 'Content-Type': 'application/json' }
+    });
+  }
+
   try {
-    const sess = loadSession();
-    const tok  = sess?.token || SUPABASE_ANON_KEY;
-    await fetch(`${SUPABASE_URL}/rest/v1/documentos?nome_arquivo=eq.${encodeURIComponent(filename)}`, {
-      method: 'DELETE',
-      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${tok}`, 'Prefer': 'return=minimal' }
-    });
-  } catch(e) {}
-  const res = await indexSingleBucketFile(filename, { textContent:'', disabled:false, style:{}, title:'' });
-  if (res.ok) { setTimeout(() => loadBucketFiles(), 800); }
-  else if (btn) { btn.textContent = '❌'; btn.disabled = false; btn.title = res.erro; }
-}
-
-async function indexSingleBucketFile(filename, btn) {
-  if (btn && btn.textContent !== undefined) { btn.textContent = '⏳'; btn.disabled = true; }
-  try {
-    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/documentos-bca/${encodeURIComponent(filename)}`, {
-      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
-    });
-    if (!res.ok) throw new Error(`Erro ao baixar (HTTP ${res.status})`);
-    const blob = await res.blob();
-    const file = new File([blob], filename, { type: blob.type });
-    const text = await extractTextFromFile(file);
-    if (!text || text.length < 30) throw new Error('Texto extraído muito curto ou ilegível');
-    const reply = await callEdgeFunction('bca-embed', { nome_arquivo: filename, texto: text.slice(0, 50000) });
-    if (btn && btn.textContent !== undefined) {
-      btn.textContent = '✅';
-      if (btn.style) { btn.style.background='#eef5f0'; btn.style.color='#5a8a6a'; }
+    if (!GEMINI_KEY) {
+      return responder({ error: 'GEMINI_API_KEY não configurada nos secrets do Supabase.' }, 500);
     }
-    return { ok: true, nome: filename, reply };
-  } catch(e) {
-    if (btn && btn.textContent !== undefined) {
-      btn.textContent = '❌';
-      if (btn.style) { btn.style.background='#fdf0f0'; btn.style.color='#b05a5a'; }
-      btn.disabled = false; btn.title = e.message;
+
+    const body = await req.json();
+    const { message, mode } = body;
+
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+
+    // ── Modo: listar documentos indexados ─────────────────────────
+    if (mode === 'list-docs') {
+      const { data: arquivos, error: storageError } = await supabase
+        .storage.from('documentos-bca')
+        .list('', { limit: 200, sortBy: { column: 'name', order: 'asc' } });
+
+      if (storageError) {
+        return responder({ error: 'Erro ao listar bucket: ' + storageError.message }, 500);
+      }
+
+      const arquivosFiltrados = (arquivos ?? []).filter(
+        f => f.name && /\.(pdf|doc|docx|txt)$/i.test(f.name)
+      );
+
+      const { data: docsIndexados } = await supabase
+        .from('documentos')
+        .select('nome_arquivo, id, criado_em');
+
+      const indexadosMap = new Map<string, any>();
+      if (docsIndexados) {
+        for (const d of docsIndexados) indexadosMap.set(d.nome_arquivo, d);
+      }
+
+      const { data: chunkCounts } = await supabase.from('chunks').select('documento_id');
+      const chunksPorDoc = new Map<string, number>();
+      if (chunkCounts) {
+        for (const c of chunkCounts) {
+          chunksPorDoc.set(c.documento_id, (chunksPorDoc.get(c.documento_id) ?? 0) + 1);
+        }
+      }
+
+      const resultado = arquivosFiltrados.map(f => {
+        const doc    = indexadosMap.get(f.name);
+        const chunks = doc ? (chunksPorDoc.get(doc.id) ?? 0) : 0;
+        return {
+          nome:        f.name,
+          tamanho_kb:  f.metadata?.size ? Math.round(f.metadata.size / 1024) : null,
+          indexado:    !!doc && chunks > 0,
+          chunks,
+          indexado_em: doc?.criado_em ?? null,
+        };
+      });
+
+      return responder({
+        response:  'ok',
+        arquivos:  resultado,
+        total:     resultado.length,
+        indexados: resultado.filter(f => f.indexado).length,
+      });
     }
-    return { ok: false, nome: filename, erro: e.message };
-  }
-}
 
-async function indexAllBucket() {
-  const naoIndexados = _bucketFiles.filter(f => !f.indexado);
-  if (naoIndexados.length === 0) { alert('Todos os documentos já estão indexados.'); return; }
+    // ── Modo: comparador ──────────────────────────────────────────
+    if (!message) throw new Error('message é obrigatório.');
 
-  const btn      = document.getElementById('indexAllBtn');
-  const progress = document.getElementById('bucketProgress');
-  const bar      = document.getElementById('bucketProgressBar');
-  const msg      = document.getElementById('bucketProgressMsg');
-  const result   = document.getElementById('bucketResult');
+    // 1. Embedding da query
+    const queryEmbedding = await gerarEmbedding(message);
 
-  btn.disabled = true; btn.textContent = '⏳ Indexando...';
-  progress.style.display = 'block'; result.style.display = 'none';
+    // 2. Busca RAG — recupera os 8 chunks mais próximos da base BCA
+    let contextText = '';
+    let chunksDebug: object = {};
 
-  const total = naoIndexados.length;
-  let ok = 0, fail = 0, failList = [];
+    if (queryEmbedding) {
+      const { data: chunks, error: rpcError } = await supabase.rpc('buscar_chunks_similares', {
+        query_embedding: queryEmbedding,
+        match_count:     8,
+        match_threshold: 0.3
+      });
 
-  for (let i = 0; i < total; i++) {
-    const f = naoIndexados[i];
-    msg.textContent = `Indexando ${i+1}/${total}: ${f.name}`;
-    bar.style.width = `${Math.round((i/total)*100)}%`;
-    const res = await indexSingleBucketFile(f.name, null);
-    if (res.ok) ok++; else { fail++; failList.push(f.name); }
-    if (i < total - 1) await new Promise(r => setTimeout(r, 1500));
-  }
+      chunksDebug = {
+        rpc_error:    rpcError?.message ?? null,
+        chunks_found: chunks?.length ?? 0,
+        arquivos:     chunks?.map((c: any) => c.nome_arquivo) ?? [],
+      };
 
-  bar.style.width = '100%'; msg.textContent = 'Concluído!';
-  result.style.display = 'block';
-  if (fail === 0) {
-    result.style.cssText = 'display:block;background:#eef5f0;border:1px solid #c0dac8;color:#5a8a6a;padding:0.65rem 0.9rem;border-radius:8px;font-size:0.75rem;';
-    result.innerHTML = `✅ <strong>${ok} documento(s)</strong> indexados com sucesso!`;
-  } else {
-    result.style.cssText = 'display:block;background:#fff8e6;border:1px solid #f0d080;color:#8a7020;padding:0.65rem 0.9rem;border-radius:8px;font-size:0.75rem;';
-    result.innerHTML = `⚠️ <strong>${ok} ok</strong> · <strong>${fail} com erro:</strong><br>${failList.map(n=>`• ${n}`).join('<br>')}`;
-  }
-  btn.disabled = false; btn.textContent = '⚡ Indexar não indexados';
-  setTimeout(() => loadBucketFiles(), 1000);
-}
-
-// ══════════════════════════════════════════════
-// UPLOAD DE DOCUMENTOS
-// ══════════════════════════════════════════════
-let uploadQueue = [];
-function addToQueue(files) {
-  Array.from(files).forEach(f => { if (!uploadQueue.find(x => x.name === f.name)) uploadQueue.push(f); });
-  renderQueue();
-}
-function renderQueue() {
-  const q = document.getElementById('upQueue');
-  const a = document.getElementById('upActions');
-  if (uploadQueue.length === 0) { q.style.display='none'; a.style.display='none'; return; }
-  q.style.display = 'flex'; a.style.display = 'flex';
-  q.innerHTML = uploadQueue.map((f, i) => `
-    <div class="up-file-row" id="upRow-${i}">
-      <div class="up-file-icon">${f.name.endsWith('.pdf')?'📕':'📘'}</div>
-      <div class="up-file-info">
-        <div class="up-file-name" title="${f.name}">${f.name}</div>
-        <div class="up-file-size">${(f.size/1024).toFixed(1)} KB</div>
-      </div>
-      <span class="up-file-status status-wait" id="upStatus-${i}">Aguardando</span>
-      <button class="up-remove" onclick="removeFromQueue(${i})" title="Remover">✕</button>
-    </div>`).join('');
-}
-function removeFromQueue(i) { uploadQueue.splice(i,1); renderQueue(); }
-function clearQueue() {
-  uploadQueue = []; renderQueue();
-  document.getElementById('upResultMsg').className = 'up-result-msg';
-  document.getElementById('upFileInput').value = '';
-}
-
-async function sendToSupabase() {
-  if (uploadQueue.length === 0) return;
-  const btn = document.getElementById('upSendBtn');
-  btn.disabled = true; btn.textContent = 'Enviando...';
-  const msg = document.getElementById('upResultMsg');
-  msg.className = 'up-result-msg';
-  let ok=0, fail=0;
-
-  for (let i=0; i<uploadQueue.length; i++) {
-    const f = uploadQueue[i];
-    const statusEl = document.getElementById(`upStatus-${i}`);
-    statusEl.textContent = 'Extraindo...'; statusEl.className = 'up-file-status status-send';
-    try {
-      const texto = await extractTextFromFile(f);
-      if (!texto || texto.trim().length < 50) throw new Error('Arquivo vazio ou ilegível.');
-      statusEl.textContent = 'Vetorizando...';
-      const reply = await callEdgeFunction('bca-embed', { texto: texto.slice(0,150000), nome_arquivo: f.name, tipo: 'documento' });
-      statusEl.textContent = 'Indexado ✓'; statusEl.className = 'up-file-status status-ok'; statusEl.title = reply;
-      ok++;
-    } catch(e) {
-      statusEl.textContent = 'Erro ✕'; statusEl.className = 'up-file-status status-err'; statusEl.title = e.message; fail++;
+      if (chunks && chunks.length > 0) {
+        const raw = chunks
+          .map((c: any, i: number) => `[Trecho ${i + 1} — ${c.nome_arquivo}]\n${c.conteudo}`)
+          .join('\n\n---\n\n');
+        contextText = raw.slice(0, 12000);
+      }
     }
-  }
-  btn.disabled = false; btn.textContent = 'Enviar para Base de Conhecimento';
-  if (ok>0 && fail===0) {
-    msg.textContent = `✓ ${ok} documento(s) indexado(s) com sucesso!`; msg.className = 'up-result-msg ok';
-  } else if (fail>0) {
-    msg.textContent = `${ok} indexado(s) · ${fail} com erro.`; msg.className = 'up-result-msg err';
-  }
-  setTimeout(() => loadBucketFiles(), 1500);
-}
 
-const upDrop = document.getElementById('upDrop');
-upDrop.addEventListener('dragover',  e => { e.preventDefault(); upDrop.classList.add('dragover'); });
-upDrop.addEventListener('dragleave', ()=> upDrop.classList.remove('dragover'));
-upDrop.addEventListener('drop', e => { e.preventDefault(); upDrop.classList.remove('dragover'); addToQueue(e.dataTransfer.files); });
+    // 3. System prompt do comparador
+    const systemPrompt = `Você é um especialista em análise de contratos do escritório BCA (Barbur Carneiro Advogados).
+Sua função exclusiva é comparar o texto fornecido com os modelos de referência da base BCA.
+Responda sempre em português formal e objetivo.
 
-// ══════════════════════════════════════════════
-// AUTH
-// ══════════════════════════════════════════════
-function showLogin() { document.getElementById('loginScreen').style.display='flex'; document.getElementById('appContent').style.display='none'; }
-function showApp(email) {
-  document.getElementById('loginScreen').style.display='none';
-  document.getElementById('appContent').style.display='flex';
-  document.getElementById('userEmail').textContent = email;
-  checkConnection();
-}
-function showLoginError(msg) {
-  const el = document.getElementById('loginError'); el.textContent = msg; el.style.display='block';
-  document.getElementById('loginLoading').style.display='none';
-  document.getElementById('loginBtn').style.display='flex';
-}
-function loginWithGoogle() {
-  document.getElementById('loginBtn').style.display='none';
-  document.getElementById('loginLoading').style.display='block';
-  document.getElementById('loginError').style.display='none';
-  const redirectTo = encodeURIComponent(window.location.href.split('#')[0]);
-  window.location.href = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${redirectTo}`;
-}
-function logout() {
-  const session = loadSession();
-  if (session?.token) {
-    fetch(`${SUPABASE_URL}/auth/v1/logout`, { method:'POST', headers:{ 'Authorization':`Bearer ${session.token}`, 'apikey':SUPABASE_ANON_KEY } }).catch(()=>{});
+REGRAS OBRIGATÓRIAS:
+- Não faça análise de risco. Não use os termos "risco", "problemático" ou "perigoso".
+- Identifique e descreva objetivamente as diferenças entre o texto fornecido e a base BCA.
+- Destaque toda e qualquer variação: valor, percentual, índice, prazo, sentido, negativa e finalidade.
+- Se o contrato for completo, analise cláusula a cláusula.
+- Se não houver correspondente na base, informe explicitamente.
+- Não emita pareceres ou recomendações jurídicas além da comparação objetiva.
+
+ESTRUTURA OBRIGATÓRIA DA RESPOSTA:
+
+🔍 CLÁUSULAS CORRESPONDENTES NA BASE BCA
+[Cláusulas da base que se relacionam com o texto, com nome do arquivo de origem]
+
+⚖️ ANÁLISE COMPARATIVA
+[Para cada cláusula do texto fornecido, classifique com um dos marcadores:]
+✅ CONFORME — redação idêntica ou equivalente ao padrão BCA
+✏️ DIVERGENTE: [descrição exata da diferença — ex: "multa alterada de 2% para 20%"]
+🆕 AUSENTE NA BASE — cláusula não localizada nos modelos BCA
+
+📋 QUADRO DE DIVERGÊNCIAS
+[Tabela objetiva com: Cláusula | Texto BCA | Texto Fornecido]
+
+📁 MODELO DE REFERÊNCIA
+[Nome exato do arquivo da base BCA mais adequado para o caso]`;
+
+    // 4. Monta conteúdo do usuário
+    const userContent = contextText
+      ? `BASE BCA — TRECHOS RECUPERADOS:\n${contextText}\n\n---\n\nTEXTO PARA COMPARAÇÃO:\n${message}`
+      : `ATENÇÃO: Nenhum trecho correspondente localizado na base BCA. Informe isso ao usuário e analise apenas com base no conhecimento jurídico geral, indicando explicitamente a ausência de referência.\n\nTEXTO PARA COMPARAÇÃO:\n${message}`;
+
+    // 5. Chama Gemini
+    const { texto: reply, status: geminiStatus, erro: geminiErro } = await chamarGemini(systemPrompt, userContent);
+
+    const debugInfo = {
+      modelo:        'gemini-2.5-flash',
+      mode:          mode ?? 'comparador',
+      gemini_status: geminiStatus,
+      has_reply:     !!reply,
+      gemini_error:  geminiErro,
+      chunks:        chunksDebug,
+      context_chars: contextText.length,
+    };
+
+    if (!reply) {
+      return responder({
+        response: geminiStatus === 429
+          ? 'O serviço está sobrecarregado. Aguarde alguns instantes e tente novamente.'
+          : 'Sem resposta da IA. Verifique o campo debug.',
+        debug: debugInfo,
+      });
+    }
+
+    return responder({ response: reply, debug: debugInfo });
+
+  } catch (err: any) {
+    return responder({ error: err.message }, 500);
   }
-  clearSession(); showLogin();
-}
-function initAuth() {
-  const saved = loadSession();
-  if (saved?.token && saved?.email) { showApp(saved.email); return; }
-  const hash = window.location.hash;
-  if (hash.includes('access_token')) {
-    try {
-      const params = new URLSearchParams(hash.substring(1));
-      const accessToken = params.get('access_token');
-      history.replaceState(null, '', window.location.pathname + window.location.search);
-      const payload = JSON.parse(atob(accessToken.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
-      const email = payload?.email || payload?.user_metadata?.email || '';
-      if (!email) { showLogin(); showLoginError('Não foi possível identificar o e-mail.'); return; }
-      if (email.toLowerCase().endsWith(ALLOWED_DOMAIN)) { saveSession(accessToken, email); showApp(email); }
-      else { showLogin(); showLoginError(`⛔ Acesso negado.\nApenas contas ${ALLOWED_DOMAIN}.\nTentou: ${email}`); }
-    } catch(err) { showLogin(); showLoginError('Erro ao processar login: ' + err.message); }
-    return;
-  }
-  showLogin();
-}
-initAuth();
-
-// Anti-pausa removido para economizar tokens
-
-// ── Inicialização ─────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-  loadBucketFiles();
-  setTimeout(() => { const saved = loadSession(); if (saved?.token) restoreHistory(); }, 300);
 });
-</script>
-</body>
-</html>
