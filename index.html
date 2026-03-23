@@ -907,22 +907,16 @@ function substituirDocumento(filename) {
     var li = document.querySelector('[title="' + filename + '"]');
     if (li) li.parentElement.style.opacity = '0.5';
     try {
-      // 1. Upload do novo arquivo com mesmo nome
-      var ab = await f.arrayBuffer();
-      var upRes = await fetch(SUPABASE_URL + '/storage/v1/object/documentos-bca/' + encodeURIComponent(filename), {
-        method: 'POST',
-        headers: { 'Content-Type': f.type || 'application/octet-stream', 'apikey': SUPABASE_ANON_KEY, 'x-upsert': 'true' },
-        body: ab
-      });
-      if (!upRes.ok && upRes.status !== 409) throw new Error('Bucket: HTTP ' + upRes.status);
-      // 2. Remove chunks antigos do banco
+      // 1. Remove chunks antigos do banco
       await fetch(SUPABASE_URL + '/rest/v1/documentos?nome_arquivo=eq.' + encodeURIComponent(filename), {
         method: 'DELETE', headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + tok, 'Prefer': 'return=minimal' }
       });
-      // 3. Reindexar com novo conteúdo
-      var novoFile = new File([ab], filename, { type: f.type });
-      var payload = await prepararPayload(novoFile);
-      await callEdgeFunction('bca-embed', Object.assign({ nome_arquivo: filename, tipo: 'documento' }, payload));
+      // 2. Reindexar — base64 enviado para bca-embed que faz upload ao bucket
+      var ab = await f.arrayBuffer();
+      var b64 = await new Promise(function(res) {
+        var r = new FileReader(); r.onload = function(e) { res(e.target.result.split(',')[1]); }; r.readAsDataURL(f);
+      });
+      await callEdgeFunction('bca-embed', { nome_arquivo: filename, tipo: 'documento', base64: b64 });
       setTimeout(loadBucketFiles, 800);
     } catch(e) {
       alert('Erro ao substituir: ' + e.message);
@@ -958,14 +952,6 @@ async function sendToSupabase() {
     var f = uploadQueue[i];
     var se = document.getElementById('upStatus-' + i); se.textContent = 'Extraindo...'; se.className = 'up-file-status status-send';
     try {
-      se.textContent = 'Enviando ao bucket...';
-      var ab = await f.arrayBuffer();
-      var upRes = await fetch(SUPABASE_URL + '/storage/v1/object/documentos-bca/' + encodeURIComponent(f.name), {
-        method: 'POST',
-        headers: { 'Content-Type': f.type || 'application/octet-stream', 'apikey': SUPABASE_ANON_KEY, 'x-upsert': 'true' },
-        body: ab
-      });
-      if (!upRes.ok && upRes.status !== 409) { var upErr = await upRes.text(); throw new Error('Bucket: ' + upRes.status + ' ' + upErr.slice(0,100)); }
       se.textContent = 'Preparando...';
       var payload = await prepararPayload(f);
       if (payload.texto && payload.texto.trim().length < 50) throw new Error('Vazio ou ilegivel');
