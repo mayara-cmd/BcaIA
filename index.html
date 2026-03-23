@@ -752,7 +752,10 @@ async function loadBucketFiles() {
     var tR = await fetch(SUPABASE_URL + '/rest/v1/documentos?select=nome_arquivo,id&order=nome_arquivo.asc&limit=500', {
       headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + tok }
     });
-    var tRows = tR.ok ? await tR.json() : [];
+    var tRawText = await tR.text();
+    window._docQueryDebug = 'HTTP ' + tR.status + ' | tok_type=' + (tok === SUPABASE_ANON_KEY ? 'ANON' : 'USER') + ' | resp=' + tRawText.slice(0,300);
+    var tRows = [];
+    try { tRows = JSON.parse(tRawText); } catch(_) {}
     var chk = {}, docIds = {};
     if (Array.isArray(tRows)) tRows.forEach(function(r) {
       if (r.nome_arquivo) {
@@ -781,8 +784,9 @@ async function loadBucketFiles() {
     var todos = Array.from(new Set(idxd.concat(bKeys))).sort();
     _bucketFiles = todos.map(function(nome) { return { name: nome, indexado: idxd.indexOf(nome) >= 0, chunks: chk[nome] || 0 }; });
 
+    var debugInfo = '<div style="font-size:0.65rem;color:#888;margin-top:0.5rem;padding:0.4rem 0.5rem;background:#111;border-radius:4px;font-family:monospace;white-space:pre-wrap;word-break:break-all;">' + (window._docQueryDebug||'') + '</div>';
     if (todos.length === 0) {
-      listEl.innerHTML = '<div style="font-size:0.75rem;color:var(--email-dark);">Nenhum documento encontrado. Envie documentos pelo painel abaixo.</div>';
+      listEl.innerHTML = '<div style="font-size:0.75rem;color:var(--email-dark);">Nenhum documento encontrado.</div>' + debugInfo;
       return;
     }
 
@@ -809,7 +813,8 @@ async function loadBucketFiles() {
           '</div>';
       }).join('');
   } catch(e) {
-    listEl.innerHTML = '<div style="font-size:0.75rem;color:#b05a5a;">Erro ao listar: ' + e.message + '</div>';
+    listEl.innerHTML = '<div style="font-size:0.75rem;color:#b05a5a;">Erro ao listar: ' + e.message + '</div>' +
+      '<div style="font-size:0.65rem;color:#888;margin-top:0.4rem;font-family:monospace;">Stack: ' + (e.stack||'').slice(0,200) + '</div>';
   }
 }
 
