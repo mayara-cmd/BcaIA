@@ -764,7 +764,7 @@ async function loadBucketFiles() {
     try {
       var bR = await fetch(SUPABASE_URL + '/storage/v1/object/list/documentos-bca', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY },
+        headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
         body: JSON.stringify({ limit: 200, offset: 0, sortBy: { column: 'name', order: 'asc' } })
       });
       var bFiles = bR.ok ? await bR.json() : [];
@@ -831,7 +831,7 @@ async function indexFile(filename, btn) {
   try {
     var s2 = loadSession(); var tok2 = s2 && s2.token ? s2.token : SUPABASE_ANON_KEY;
     var res = await fetch(SUPABASE_URL + '/storage/v1/object/documentos-bca/' + encodeURIComponent(filename), {
-      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + tok2 }
+      headers: { 'apikey': SUPABASE_ANON_KEY }
     });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     var blob = await res.blob();
@@ -911,10 +911,10 @@ function substituirDocumento(filename) {
       var ab = await f.arrayBuffer();
       var upRes = await fetch(SUPABASE_URL + '/storage/v1/object/documentos-bca/' + encodeURIComponent(filename), {
         method: 'POST',
-        headers: { 'Content-Type': f.type || 'application/octet-stream', 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + tok, 'x-upsert': 'true' },
+        headers: { 'Content-Type': f.type || 'application/octet-stream', 'apikey': SUPABASE_ANON_KEY, 'x-upsert': 'true' },
         body: ab
       });
-      if (!upRes.ok) throw new Error('Bucket: HTTP ' + upRes.status);
+      if (!upRes.ok && upRes.status !== 409) throw new Error('Bucket: HTTP ' + upRes.status);
       // 2. Remove chunks antigos do banco
       await fetch(SUPABASE_URL + '/rest/v1/documentos?nome_arquivo=eq.' + encodeURIComponent(filename), {
         method: 'DELETE', headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + tok, 'Prefer': 'return=minimal' }
@@ -962,10 +962,10 @@ async function sendToSupabase() {
       var ab = await f.arrayBuffer();
       var upRes = await fetch(SUPABASE_URL + '/storage/v1/object/documentos-bca/' + encodeURIComponent(f.name), {
         method: 'POST',
-        headers: { 'Content-Type': f.type || 'application/octet-stream', 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + tok, 'x-upsert': 'true' },
+        headers: { 'Content-Type': f.type || 'application/octet-stream', 'apikey': SUPABASE_ANON_KEY, 'x-upsert': 'true' },
         body: ab
       });
-      if (!upRes.ok) { var upErr = await upRes.text(); throw new Error('Bucket: ' + upRes.status + ' ' + upErr.slice(0,100)); }
+      if (!upRes.ok && upRes.status !== 409) { var upErr = await upRes.text(); throw new Error('Bucket: ' + upRes.status + ' ' + upErr.slice(0,100)); }
       se.textContent = 'Preparando...';
       var payload = await prepararPayload(f);
       if (payload.texto && payload.texto.trim().length < 50) throw new Error('Vazio ou ilegivel');
