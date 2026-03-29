@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BCA | Assistente Jurídico</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<!-- pdf.js carregado com defer para não bloquear renderização -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
 <style>
 :root{--black:#0a0a0a;--dark-gray:#444440;--fendi:#9d886d;--fendi-light:#e3ddca;--green-gray:#d0dbca;--email-dark:#8d8d8d;--email-light:#f7f7f7;--white:#ffffff;--fendi-dim:rgba(157,136,109,0.1);--fendi-border:rgba(157,136,109,0.22);}
@@ -29,11 +30,20 @@ body{background:var(--email-light);color:var(--dark-gray);font-family:'Lato',san
 .sb-footer{margin-top:auto;padding:1rem;border-top:1px solid var(--fendi-border);background:var(--email-light);}
 .sb-footer-text{font-size:0.68rem;color:var(--email-dark);text-align:center;line-height:1.7;}
 .content{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;}
+.tabs{display:flex;padding:0 1rem;background:var(--white);border-bottom:1px solid var(--fendi-border);flex-shrink:0;overflow-x:auto;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{padding:0.95rem 1.1rem;font-size:0.78rem;font-family:'Montserrat',sans-serif;font-weight:500;color:var(--email-dark);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.16s;letter-spacing:0.04em;white-space:nowrap;flex-shrink:0;}
+.tab:hover{color:var(--dark-gray);}
+.tab.active{color:var(--fendi);border-bottom-color:var(--fendi);}
 @media(max-width:768px){
   .topbar{padding:0 0.75rem;height:48px;}.logo-sub{display:none;}
   .privacy-badge span:not(.pdot){display:none;}.sidebar{display:none;}
+  .tabs{padding:0;}.tab{padding:0.7rem 0.6rem;font-size:0.68rem;flex:1;text-align:center;}
   .chat-messages{padding:0.75rem;}.chat-input-area{padding:0.6rem 0.75rem;}
   .msg-bubble{max-width:82vw;font-size:0.82rem;}
+  .comp-wrap{flex-direction:column!important;overflow-y:auto!important;}
+  .comp-left{width:100%!important;border-right:none!important;border-bottom:1px solid var(--fendi-border)!important;flex-shrink:0;}
+  .comp-right{flex:1;min-height:55vh;overflow-y:auto;}
   .up-body{padding:0.75rem;}.up-header{padding:0.75rem 1rem;}.up-drop{padding:1.5rem 1rem;}
 }
 .panel{display:none;flex:1;overflow:hidden;}
@@ -52,6 +62,9 @@ body{background:var(--email-light);color:var(--dark-gray);font-family:'Lato',san
 .msg-source{margin-top:0.45rem;font-size:0.69rem;color:var(--fendi);}
 .welcome-h{font-family:'Montserrat',sans-serif;font-size:0.88rem;font-weight:600;color:var(--black);margin-bottom:0.5rem;}
 .msg-bubble strong{font-weight:700;}
+.chips{display:flex;flex-wrap:wrap;gap:0.4rem;margin-top:0.875rem;}
+.chip{padding:0.28rem 0.7rem;border:1px solid var(--fendi-border);border-radius:20px;font-size:0.71rem;color:var(--fendi);cursor:pointer;transition:all 0.16s;background:var(--white);}
+.chip:hover{background:var(--fendi);color:var(--white);border-color:var(--fendi);}
 .chat-input-area{padding:1.2rem 2rem;border-top:1px solid var(--fendi-border);background:var(--white);flex-shrink:0;}
 .input-wrap{display:flex;gap:0.7rem;align-items:flex-end;background:var(--email-light);border:1px solid var(--fendi-border);border-radius:10px;padding:0.7rem 1rem;transition:border-color 0.2s;}
 .input-wrap:focus-within{border-color:var(--fendi);}
@@ -92,25 +105,38 @@ body{background:var(--email-light);color:var(--dark-gray);font-family:'Lato',san
 .up-remove{background:none;border:none;color:var(--email-dark);cursor:pointer;font-size:1rem;padding:0.2rem;transition:color 0.16s;flex-shrink:0;}
 .up-remove:hover{color:#b05a5a;}
 .up-actions{display:flex;gap:0.75rem;}
-.up-btn{flex:1;padding:0.85rem;border:none;border-radius:8px;font-family:'Montserrat',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:0.08em;cursor:pointer;transition:all 0.18s;}
-.up-btn-primary{background:var(--black);color:var(--fendi-light);}
-.up-btn-primary:hover{background:var(--dark-gray);}
-.up-btn-primary:disabled{opacity:0.3;cursor:not-allowed;}
-.up-btn-secondary{background:var(--email-light);color:var(--fendi);border:1px solid var(--fendi-border);}
-.up-btn-secondary:hover{background:var(--fendi-dim);}
-.up-result-msg{font-size:0.75rem;padding:0.6rem 0.9rem;border-radius:8px;margin-top:0.6rem;display:none;}
-.up-result-msg.ok{display:block;background:#eef5f0;color:#5a8a6a;border:1px solid #c0dac8;}
-.up-result-msg.err{display:block;background:#fdf0f0;color:#b05a5a;border:1px solid #f0c0c0;}
+.up-send-btn{flex:1;padding:0.83rem;background:var(--black);color:var(--fendi-light);border:none;border-radius:8px;font-family:'Montserrat',sans-serif;font-size:0.74rem;font-weight:700;letter-spacing:0.1em;cursor:pointer;transition:all 0.18s;text-transform:uppercase;}
+.up-send-btn:hover{background:var(--dark-gray);}
+.up-send-btn:disabled{opacity:0.3;cursor:not-allowed;}
+.up-clear-btn{padding:0.83rem 1.2rem;background:none;border:1px solid var(--fendi-border);color:var(--fendi);border-radius:8px;font-family:'Montserrat',sans-serif;font-size:0.74rem;font-weight:600;cursor:pointer;transition:all 0.18s;}
+.up-clear-btn:hover{background:var(--fendi-dim);}
+.up-tip{background:var(--fendi-dim);border:1px solid var(--fendi-border);border-radius:8px;padding:0.85rem 1rem;font-size:0.77rem;color:var(--fendi);line-height:1.6;}
+.up-result-msg{padding:0.75rem 1rem;border-radius:8px;font-size:0.8rem;display:none;}
+.up-result-msg.ok{background:#eef5f0;color:#5a8a6a;border:1px solid #c0dac8;display:block;}
+.up-result-msg.err{background:#fdf0f0;color:#b05a5a;border:1px solid #f0c0c0;display:block;}
+/* Tabela comparativa */
+.comp-table{width:100%;border-collapse:collapse;font-size:0.82rem;margin:1rem 0;border-radius:8px;overflow:hidden;border:1px solid var(--fendi-border);}
+.comp-table th{background:var(--black);color:var(--fendi-light);font-family:'Montserrat',sans-serif;font-size:0.65rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:0.65rem 1rem;text-align:left;}
+.comp-table th:first-child{width:22%;border-right:1px solid #333;}
+.comp-table th:nth-child(2){width:39%;border-right:1px solid #333;}
+.comp-table th:nth-child(3){width:39%;}
+.comp-table td{padding:0.65rem 1rem;vertical-align:top;line-height:1.65;border-bottom:1px solid var(--fendi-border);color:var(--dark-gray);}
+.comp-table td:first-child{font-family:'Montserrat',sans-serif;font-size:0.72rem;font-weight:700;color:var(--fendi);border-right:1px solid var(--fendi-border);background:var(--email-light);}
+.comp-table td:nth-child(2){border-right:1px solid var(--fendi-border);background:#fffdf9;}
+.comp-table td:nth-child(3){background:#fff;}
+.comp-table tr:last-child td{border-bottom:none;}
+.comp-table tr:hover td{filter:brightness(0.97);}
+.comp-table u strong, .comp-table strong u{background:#fff3cd;padding:0 2px;border-radius:2px;}
 </style>
 </head>
 <body>
 
 <!-- LOGIN -->
-<div id="loginScreen" style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--black);padding:1rem;">
-  <div style="background:rgba(255,255,255,0.05);backdrop-filter:blur(15px);border:1px solid rgba(157,136,109,0.18);border-radius:18px;padding:2.5rem 2rem;max-width:400px;width:100%;display:flex;flex-direction:column;gap:1.75rem;">
-    <div style="text-align:center;">
-      <div style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:2rem;color:var(--fendi-light);letter-spacing:0.12em;margin-bottom:0.5rem;">BCA</div>
-      <div style="width:48px;height:1px;background:rgba(157,136,109,0.3);margin:0 auto;"></div>
+<div id="loginScreen" style="position:fixed;inset:0;z-index:9999;background:var(--black);display:flex;align-items:center;justify-content:center;font-family:'Lato',sans-serif;">
+  <div style="background:#111;border:1px solid rgba(157,136,109,0.25);border-radius:16px;padding:3rem 2.5rem;width:100%;max-width:400px;text-align:center;display:flex;flex-direction:column;gap:1.5rem;">
+    <div>
+      <div style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:2rem;color:var(--fendi-light);letter-spacing:0.12em;">BCA</div>
+      <div style="font-size:0.7rem;color:var(--email-dark);letter-spacing:0.2em;text-transform:uppercase;margin-top:4px;">Barbur Carneiro Advogados</div>
     </div>
     <div style="width:48px;height:1px;background:rgba(157,136,109,0.3);margin:0 auto;"></div>
     <div>
@@ -147,8 +173,9 @@ body{background:var(--email-light);color:var(--dark-gray);font-family:'Lato',san
 <div class="main">
   <div class="sidebar">
     <div class="sb-section">
-      <div class="sb-label">Ferramenta</div>
-      <div class="nav-item active" onclick="switchTab('chat',this)"><span class="nav-icon">💬</span> Consultor Jurídico</div>
+      <div class="sb-label">Ferramentas</div>
+      <div class="nav-item active" onclick="switchTab('chat',this)"><span class="nav-icon">💬</span> Chat Juridico</div>
+      <div class="nav-item" onclick="switchTab('comparador',this)"><span class="nav-icon">⚖️</span> Comparador de Contratos</div>
       <div class="nav-item" onclick="clearChat()" style="font-size:0.75rem;color:var(--email-dark);padding:0.4rem 0.75rem;"><span class="nav-icon" style="font-size:0.75rem;">🗑</span> Limpar histórico</div>
     </div>
     <div class="sb-section">
@@ -160,6 +187,7 @@ body{background:var(--email-light);color:var(--dark-gray);font-family:'Lato',san
     </div>
   </div>
   <div class="content">
+    <!-- tabs removidas: navegação pela sidebar -->
 
     <!-- CHAT -->
     <div class="panel active" id="panel-chat">
@@ -169,8 +197,14 @@ body{background:var(--email-light);color:var(--dark-gray);font-family:'Lato',san
           <div class="msg-av ai">BCA</div>
           <div>
             <div class="msg-bubble">
-              <div class="welcome-h">Consultor Jurídico BCA</div>
-              <div style="font-size:0.84rem;color:var(--email-dark);line-height:1.7">Consulte cláusulas contratuais e conceitos jurídicos da base BCA. Atuo nas áreas de Direito do Trabalho (empresarial) e Direito Imobiliário.</div>
+              <div class="welcome-h">Assistente Juridico BCA</div>
+              <div style="font-size:0.84rem;color:var(--email-dark);line-height:1.7">Consulte clausulas contratuais da base BCA. Indico o texto completo, o contrato de origem e clausulas relacionadas.</div>
+              <div class="chips">
+                <div class="chip" onclick="useChip(this)">Modelos de clausula de tag along</div>
+                <div class="chip" onclick="useChip(this)">Clausula de nao concorrencia nos contratos BCA</div>
+                <div class="chip" onclick="useChip(this)">Multa rescisoria — modelos do escritorio</div>
+                <div class="chip" onclick="useChip(this)">Foro de eleicao nos modelos BCA</div>
+              </div>
             </div>
             <div class="msg-source">Gemini 2.5 Flash · Base BCA</div>
           </div>
@@ -178,16 +212,75 @@ body{background:var(--email-light);color:var(--dark-gray);font-family:'Lato',san
       </div>
       <div class="chat-input-area">
         <div class="input-wrap">
-          <textarea class="chat-input" id="chatInput" placeholder="Consulte cláusulas, conceitos ou modelos da base BCA..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+          <textarea class="chat-input" id="chatInput" placeholder="Consulte clausulas, modelos ou contratos da base BCA..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
           <button class="send-btn" id="sendBtn" onclick="sendMessage()">&#10148;</button>
         </div>
         <div class="error-banner" id="errorBanner"></div>
         <div id="debugRow" class="debug-row" style="display:none;">
           <button class="debug-toggle-btn" onclick="toggleDebug()">ver resposta bruta</button>
         </div>
-        <div class="debug-panel" id="debugPanel"></div>
+        <pre id="debugPanel" class="debug-panel"></pre>
       </div>
+    </div>
 
+    <!-- COMPARADOR -->
+    <div class="panel" id="panel-comparador">
+      <div class="comp-wrap" style="display:flex;flex:1;overflow:hidden;">
+        <div class="comp-left" style="width:340px;flex-shrink:0;background:var(--white);border-right:1px solid var(--fendi-border);overflow-y:auto;padding:1.25rem;display:flex;flex-direction:column;gap:0.75rem;">
+          <div style="font-family:'Montserrat',sans-serif;font-size:0.65rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--fendi);">Documento para Analise</div>
+          <div style="display:flex;border:1px solid var(--fendi-border);border-radius:8px;overflow:hidden;">
+            <button id="btnUpload" onclick="setMode('upload')" style="flex:1;padding:0.55rem;font-family:'Montserrat',sans-serif;font-size:0.68rem;font-weight:700;border:none;cursor:pointer;background:var(--black);color:var(--fendi-light);">Upload</button>
+            <button id="btnText" onclick="setMode('text')" style="flex:1;padding:0.55rem;font-family:'Montserrat',sans-serif;font-size:0.68rem;font-weight:700;border:none;cursor:pointer;background:var(--email-light);color:var(--email-dark);">Inserir Texto</button>
+          </div>
+          <div id="areaUpload">
+            <div id="uploadZone" style="border:2px dashed var(--fendi-border);border-radius:10px;padding:1.25rem 1rem;text-align:center;cursor:pointer;transition:all 0.22s;position:relative;background:var(--email-light);margin-bottom:0.5rem;">
+              <input type="file" accept=".pdf,.doc,.docx,.txt" onchange="handleFile(this)" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;"/>
+              <div style="font-size:1.5rem;margin-bottom:0.35rem;">📄</div>
+              <div style="font-size:0.75rem;color:var(--email-dark);line-height:1.5;"><strong style="color:var(--fendi);">Clique</strong> ou arraste aqui<br><span style="font-size:0.68rem;">TXT · PDF · DOC · DOCX</span></div>
+            </div>
+            <div id="fileCard" style="display:none;align-items:center;gap:0.6rem;background:var(--fendi-light);border:1px solid var(--fendi-border);border-radius:8px;padding:0.6rem 0.75rem;margin-bottom:0.5rem;">
+              <span style="font-size:1.1rem;">📄</span>
+              <div style="min-width:0;">
+                <div id="fileName" style="font-size:0.76rem;color:var(--dark-gray);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">—</div>
+                <div id="fileSize" style="font-size:0.66rem;color:var(--email-dark);">—</div>
+              </div>
+            </div>
+          </div>
+          <div id="areaText" style="display:none;flex-direction:column;gap:0.35rem;flex:1;">
+            <textarea id="manualText" placeholder="Cole ou digite a clausula ou contrato para comparar com os padroes BCA..." oninput="onManualInput()" style="width:100%;flex:1;min-height:200px;height:calc(100vh - 320px);max-height:60vh;background:var(--email-light);border:1px solid var(--fendi-border);border-radius:10px;padding:0.875rem;font-family:'Lato',sans-serif;font-size:0.83rem;color:var(--dark-gray);resize:vertical;outline:none;line-height:1.65;" onfocus="this.style.borderColor='var(--fendi)'" onblur="this.style.borderColor='var(--fendi-border)'"></textarea>
+            <div id="charCount" style="font-size:0.66rem;color:var(--email-dark);text-align:right;">0 caracteres</div>
+          </div>
+          <button id="analyzeBtn" onclick="analyzeContract()" disabled style="width:100%;padding:0.75rem;background:var(--black);color:var(--fendi-light);border:none;border-radius:8px;font-family:'Montserrat',sans-serif;font-size:0.71rem;font-weight:700;letter-spacing:0.08em;cursor:not-allowed;opacity:0.3;margin-top:auto;text-transform:uppercase;">Buscar e Comparar</button>
+          <div style="background:var(--email-light);border-radius:8px;padding:0.7rem 0.9rem;">
+            <div style="font-family:'Montserrat',sans-serif;font-size:0.6rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--dark-gray);margin-bottom:0.5rem;">Como funciona</div>
+            <div style="font-size:0.72rem;color:var(--email-dark);line-height:1.75;">Busca clausulas similares nos docs BCA<br>Compara redacao e termos juridicos<br>Identifica diferencas clausula a clausula<br>Gera quadro de divergencias</div>
+          </div>
+        </div>
+        <div class="comp-right" style="flex:1;display:flex;flex-direction:column;overflow-y:auto;padding:1.5rem 1.75rem;min-width:0;">
+          <div style="font-family:'Montserrat',sans-serif;font-size:0.7rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--fendi);margin-bottom:1rem;">Resultado da Comparacao</div>
+          <div id="resultPlaceholder" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--email-dark);text-align:center;gap:1rem;">
+            <div style="font-size:2.5rem;opacity:0.3;">⚖️</div>
+            <div style="font-size:0.82rem;line-height:1.7;">Insira uma clausula ou contrato<br>para buscar similares na base BCA</div>
+          </div>
+          <div id="loadingResult" style="display:none;flex-direction:column;align-items:center;justify-content:center;gap:1rem;padding:4rem 2rem;">
+            <div class="loading-ring"></div>
+            <div id="loadingMsg" style="font-size:0.78rem;color:var(--email-dark);">Buscando clausulas similares...</div>
+          </div>
+          <div id="analysisResult" style="display:none;flex-direction:column;gap:1rem;">
+            <div style="background:var(--white);border:1px solid var(--fendi-border);border-radius:10px;padding:1.25rem;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.9rem;gap:0.75rem;flex-wrap:wrap;">
+                <div style="font-family:'Montserrat',sans-serif;font-size:0.62rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--email-dark);">Analise Comparativa · Gemini 2.5 Flash</div>
+                <div style="display:flex;gap:0.5rem;">
+                  <button onclick="exportarDocx()" style="background:var(--black);border:none;color:var(--fendi-light);font-size:0.62rem;font-family:'Montserrat',sans-serif;font-weight:700;padding:4px 10px;border-radius:4px;cursor:pointer;">Exportar DOCX</button>
+                  <button onclick="toggleCompDebug()" style="background:none;border:1px solid #2a3a2a;color:#4a7a4a;font-size:0.6rem;font-family:'Courier New',monospace;padding:2px 8px;border-radius:4px;cursor:pointer;">debug</button>
+                </div>
+              </div>
+              <div id="aiAnalysis" style="font-size:0.83rem;line-height:1.85;color:var(--dark-gray);"></div>
+              <pre id="compDebugPanel" style="display:none;margin-top:1rem;background:#0d1117;border:1px solid #2a4a2a;border-radius:8px;padding:0.75rem;font-size:0.65rem;color:#7ec87e;font-family:'Courier New',monospace;max-height:220px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;"></pre>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- UPLOAD DOCS -->
@@ -195,7 +288,7 @@ body{background:var(--email-light);color:var(--dark-gray);font-family:'Lato',san
       <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
         <div class="up-header">
           <div class="up-title">Adicionar Documentos a Base de Conhecimento</div>
-          <div class="up-sub">Envie documentos para indexacao — ficam disponiveis no Consultor</div>
+          <div class="up-sub">Envie documentos para indexacao — ficam disponiveis no Chat e Comparador</div>
         </div>
         <div class="up-body">
           <div style="background:var(--white);border:1px solid var(--fendi-border);border-radius:10px;padding:1.1rem 1.25rem;">
@@ -215,17 +308,15 @@ body{background:var(--email-light);color:var(--dark-gray);font-family:'Lato',san
           <div class="up-drop" id="upDrop">
             <input type="file" id="upFileInput" accept=".txt,.pdf,.doc,.docx" multiple onchange="addToQueue(this.files)"/>
             <div class="up-drop-icon">📁</div>
-            <div class="up-drop-text">
-              <strong>Clique</strong> ou arraste arquivos aqui<br>
-              <span style="font-size:0.77rem;">TXT · PDF · DOC · DOCX</span>
-            </div>
+            <div class="up-drop-text"><strong>Clique para selecionar</strong> ou arraste aqui<br>PDF · DOC · DOCX · TXT</div>
           </div>
-          <div class="up-queue" id="upQueue" style="display:none;"></div>
-          <div class="up-actions" id="upActions" style="display:none;">
-            <button class="up-btn up-btn-primary" id="upSendBtn" onclick="sendToSupabase()">Enviar para Base de Conhecimento</button>
-            <button class="up-btn up-btn-secondary" onclick="clearQueue()">Limpar fila</button>
+          <div class="up-queue" id="upQueue" style="display:none"></div>
+          <div class="up-actions" id="upActions" style="display:none">
+            <button class="up-send-btn" id="upSendBtn" onclick="sendToSupabase()">Enviar para Base de Conhecimento</button>
+            <button class="up-clear-btn" onclick="clearQueue()">Limpar</button>
           </div>
           <div class="up-result-msg" id="upResultMsg"></div>
+          <div class="up-tip">Apos o envio, os documentos sao fragmentados, vetorizados e salvos no Supabase. Ficam disponiveis no Chat e Comparador.</div>
         </div>
       </div>
     </div>
@@ -235,43 +326,76 @@ body{background:var(--email-light);color:var(--dark-gray);font-family:'Lato',san
 </div>
 
 <script>
-// ── CONFIG ────────────────────────────────────────────────────────
-const SUPABASE_URL      = 'https://ysxuybhmkqoalvmjmwcl.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlzeHV5Ymhta3FvYWx2bWptd2NsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzkxMjQxNzEsImV4cCI6MjA1NDcwMDE3MX0.bMxyA9VYF5xxnzL-eBD_M4CYJMw-QC9RGkjI5sEMTb0';
-const ALLOWED_DOMAIN    = 'barburcarneiro.com.br';
+// ── CONFIGURACAO ──────────────────────────────────────────────────
+const SUPABASE_URL      = 'https://hnhfbjuedesmkxrmmfan.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhuaGZianVlZGVzbWt4cm1tZmFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5OTcwMzYsImV4cCI6MjA4ODU3MzAzNn0.MemLsn-_uLOlo7YpK0u7ulRxuvMVHMIUJyKNv20jocY';
+const FUNCTIONS_URL     = SUPABASE_URL + '/functions/v1';
+const ALLOWED_DOMAIN    = '@barburcarneiro.com.br';
+const SESSION_KEY       = 'bca_session_v2';
 
-// ── SESSION ───────────────────────────────────────────────────────
+// ── SESSAO ────────────────────────────────────────────────────────
 function saveSession(token, email, refresh) {
-  localStorage.setItem('bca_token', token);
-  localStorage.setItem('bca_email', email);
-  if (refresh) localStorage.setItem('bca_refresh', refresh);
+  try { sessionStorage.setItem(SESSION_KEY, JSON.stringify({ token, email, refresh: refresh || null })); } catch(e) {}
 }
 function loadSession() {
-  const token   = localStorage.getItem('bca_token');
-  const email   = localStorage.getItem('bca_email');
-  const refresh = localStorage.getItem('bca_refresh');
-  return (token && email) ? { token, email, refresh } : null;
+  try { return JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null'); } catch(e) { return null; }
 }
 function clearSession() {
-  localStorage.removeItem('bca_token');
-  localStorage.removeItem('bca_email');
-  localStorage.removeItem('bca_refresh');
+  try { sessionStorage.removeItem(SESSION_KEY); } catch(e) {}
 }
 
-// ── EDGE FUNCTION WRAPPER ─────────────────────────────────────────
-async function callEdgeFunction(fname, payload) {
+// ── REFRESH DE TOKEN ──────────────────────────────────────────────
+async function refreshSession() {
   const s = loadSession();
-  const tok = s && s.token ? s.token : SUPABASE_ANON_KEY;
-  const url = SUPABASE_URL + '/functions/v1/' + fname;
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type':  'application/json',
-      'Authorization': 'Bearer ' + tok,
-      'apikey':        SUPABASE_ANON_KEY
-    },
-    body: JSON.stringify(payload)
-  });
+  if (!s || !s.refresh) return null;
+  try {
+    const r = await fetch(SUPABASE_URL + '/auth/v1/token?grant_type=refresh_token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
+      body: JSON.stringify({ refresh_token: s.refresh })
+    });
+    if (!r.ok) return null;
+    const d = await r.json();
+    if (d.access_token) {
+      saveSession(d.access_token, s.email, d.refresh_token || s.refresh);
+      return d.access_token;
+    }
+  } catch(e) {}
+  return null;
+}
+
+// ── CHAMADA EDGE FUNCTION (com retry em 401) ──────────────────────
+async function callEdgeFunction(fn, body) {
+  const s = loadSession();
+  const token = s && s.token ? s.token : SUPABASE_ANON_KEY;
+
+  async function doFetch(t) {
+    return fetch(FUNCTIONS_URL + '/' + fn, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': 'Bearer ' + t
+      },
+      body: JSON.stringify(body)
+    });
+  }
+
+  let res = await doFetch(token);
+
+  // 401: tenta renovar token uma vez antes de pedir relogin
+  if (res.status === 401) {
+    const newToken = await refreshSession();
+    if (newToken) {
+      res = await doFetch(newToken);
+    } else {
+      clearSession();
+      showLogin();
+      showLoginError('Sessao expirada. Faca login novamente.');
+      throw new Error('Sessao expirada');
+    }
+  }
+
   const raw = await res.text();
   window._lastRawResponse = raw;
   window._lastStatus = res.status;
@@ -306,6 +430,7 @@ function switchTab(p, el) {
 // ── CHAT ──────────────────────────────────────────────────────────
 function handleKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
 function autoResize(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 120) + 'px'; }
+function useChip(el) { document.getElementById('chatInput').value = el.textContent.trim(); sendMessage(); }
 function showError(msg) {
   const b = document.getElementById('errorBanner');
   b.textContent = msg; b.classList.add('show');
@@ -318,141 +443,485 @@ function toggleDebug() {
   p.classList.add('show');
 }
 function fmt(text) {
-  return text
+  // Renderiza tabela markdown
+  var lines = text.split('\n');
+  var result = [];
+  var inTable = false;
+  var tableRows = [];
+
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i];
+    var isTableRow = /^\|/.test(line.trim());
+    var isSeparator = /^\|[-:\s|]+\|$/.test(line.trim());
+
+    if (isTableRow && !isSeparator) {
+      if (!inTable) { inTable = true; tableRows = []; }
+      tableRows.push(line);
+    } else if (isSeparator) {
+      // ignora linha separadora
+    } else {
+      if (inTable) {
+        result.push(renderTable(tableRows));
+        inTable = false; tableRows = [];
+      }
+      result.push(line);
+    }
+  }
+  if (inTable && tableRows.length) result.push(renderTable(tableRows));
+
+  return result.join('\n')
     .replace(/\*\*__(.*?)__\*\*/g, '<strong><u>$1</u></strong>')
     .replace(/__(.*?)__/g, '<u>$1</u>')
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
     .replace(/\n/g, '<br>');
 }
+
+function renderTable(rows) {
+  var html = '<table class="comp-table">';
+  rows.forEach(function(row, idx) {
+    var cells = row.split('|').filter(function(c, i, arr) { return i > 0 && i < arr.length - 1; });
+    if (idx === 0) {
+      html += '<thead><tr>' + cells.map(function(c) { return '<th>' + c.trim() + '</th>'; }).join('') + '</tr></thead><tbody>';
+    } else {
+      html += '<tr>' + cells.map(function(c) {
+        var txt = c.trim()
+          .replace(/\*\*__(.*?)__\*\*/g, '<strong><u>$1</u></strong>')
+          .replace(/__(.*?)__/g, '<u>$1</u>')
+          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        return '<td>' + txt + '</td>';
+      }).join('') + '</tr>';
+    }
+  });
+  html += '</tbody></table>';
+  return html;
+}
 function addMessage(html, isUser) {
   const c = document.getElementById('chatMessages');
-  const av = isUser ? '<div class="msg-av user">👤</div>' : '<div class="msg-av ai">BCA</div>';
-  const cls = isUser ? 'message user' : 'message';
-  const bbl = '<div class="msg-bubble">' + html + '</div>';
-  const src = isUser ? '' : '<div class="msg-source">Gemini 2.5 Flash · Base BCA</div>';
-  c.insertAdjacentHTML('beforeend', '<div class="' + cls + '">' + av + '<div>' + bbl + src + '</div></div>');
-  c.scrollTop = c.scrollHeight;
+  const d = document.createElement('div');
+  d.className = 'message' + (isUser ? ' user' : '');
+  const av  = '<div class="msg-av ' + (isUser ? 'user' : 'ai') + '">' + (isUser ? 'EU' : 'BCA') + '</div>';
+  const bub = '<div class="msg-bubble">' + html + '</div>';
+  const src = !isUser ? '<div class="msg-source">Gemini 2.5 Flash · Base BCA</div>' : '';
+  d.innerHTML = isUser ? bub + av : av + '<div>' + bub + src + '</div>';
+  c.appendChild(d); c.scrollTop = c.scrollHeight;
 }
+function addTyping() {
+  const c = document.getElementById('chatMessages');
+  const d = document.createElement('div'); d.className = 'message'; d.id = 'typing';
+  d.innerHTML = '<div class="msg-av ai">BCA</div><div class="msg-bubble" style="color:var(--email-dark)">Consultando base<span id="dots">.</span></div>';
+  c.appendChild(d); c.scrollTop = c.scrollHeight;
+  let n = 0;
+  window._dotInterval = setInterval(function() {
+    const el = document.getElementById('dots'); if (el) el.textContent = ['.', '..', '...'][n++ % 3];
+  }, 400);
+}
+function removeTyping() { clearInterval(window._dotInterval); const el = document.getElementById('typing'); if (el) el.remove(); }
 function clearChat() {
-  const m = document.getElementById('chatMessages');
-  m.innerHTML = '<div class="message"><div class="msg-av ai">BCA</div><div><div class="msg-bubble"><div class="welcome-h">Consultor Jurídico BCA</div><div style="font-size:0.84rem;color:var(--email-dark);line-height:1.7">Consulte cláusulas contratuais e conceitos jurídicos da base BCA. Atuo nas áreas de Direito do Trabalho (empresarial) e Direito Imobiliário.</div></div><div class="msg-source">Gemini 2.5 Flash · Base BCA</div></div></div>';
+  document.getElementById('chatMessages').innerHTML =
+    '<div class="message"><div class="msg-av ai">BCA</div><div><div class="msg-bubble"><div class="welcome-h">Assistente Juridico BCA</div><div style="font-size:0.84rem;color:var(--email-dark);line-height:1.7">Historico limpo.</div></div></div></div>';
+  document.getElementById('debugRow').style.display = 'none';
+  document.getElementById('debugPanel').classList.remove('show');
 }
 async function sendMessage() {
-  const inp = document.getElementById('chatInput');
-  const txt = inp.value.trim();
-  if (!txt) return;
-  const btn = document.getElementById('sendBtn');
-  btn.disabled = true;
-  addMessage(fmt(txt), true);
-  inp.value = ''; inp.style.height = 'auto';
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim(); if (!text) return;
+  addMessage(text, true);
+  input.value = ''; input.style.height = 'auto';
+  document.getElementById('sendBtn').disabled = true;
+  addTyping();
   document.getElementById('debugRow').style.display = 'flex';
-  addMessage('<div class="loading-ring"></div>', false);
   try {
-    const ans = await callEdgeFunction('bca-docs', { message: txt });
-    const msgs = document.querySelectorAll('.message');
-    if (msgs.length > 0) msgs[msgs.length - 1].remove();
-    addMessage(fmt(ans), false);
+    const reply = await callEdgeFunction('bca-docs', { message: text, mode: 'chat' });
+    removeTyping(); addMessage(fmt(reply), false);
   } catch(err) {
-    const msgs = document.querySelectorAll('.message');
-    if (msgs.length > 0) msgs[msgs.length - 1].remove();
-    showError(err.message);
+    removeTyping(); showError(err.message);
+    const p = document.getElementById('debugPanel');
+    p.textContent = 'ERRO: ' + err.message + '\nHTTP ' + (window._lastStatus || '?') + '\n\n' + (window._lastRawResponse || '');
+    p.classList.add('show');
   } finally {
-    btn.disabled = false;
+    document.getElementById('sendBtn').disabled = false;
   }
 }
 
-// ── BUCKET LIST ───────────────────────────────────────────────────
-async function loadBucketFiles() {
-  const el = document.getElementById('bucketList');
-  el.innerHTML = '<div style="font-size:0.75rem;color:var(--email-dark);">Carregando...</div>';
-  try {
-    const reply = await callEdgeFunction('bca-docs', { mode: 'list-docs' });
-    const raw = typeof reply === 'string' ? JSON.parse(reply) : reply;
-    const arq = raw.arquivos || [];
-    if (arq.length === 0) { el.innerHTML = '<div style="font-size:0.75rem;color:var(--email-dark);">Nenhum arquivo encontrado.</div>'; return; }
-    el.innerHTML = arq.map(function(f) {
-      const ico = f.indexado ? '✅' : '⏳';
-      const st = f.indexado ? 'Indexado' : 'Aguardando indexação';
-      const dt = f.indexado && f.indexado_em ? new Date(f.indexado_em).toLocaleDateString('pt-BR') : '';
-      return '<div style="display:flex;align-items:center;gap:0.6rem;padding:0.5rem 0.7rem;background:var(--email-light);border-radius:6px;"><span style="font-size:1rem;">' + ico + '</span><div style="flex:1;min-width:0;"><div style="font-size:0.75rem;font-weight:700;color:var(--dark-gray);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + f.nome + '</div><div style="font-size:0.66rem;color:var(--email-dark);">' + st + (dt ? ' · ' + dt : '') + (f.chunks > 0 ? ' · ' + f.chunks + ' chunks' : '') + '</div></div></div>';
-    }).join('');
-  } catch(err) { el.innerHTML = '<div style="font-size:0.75rem;color:#b05a5a;">Erro: ' + err.message + '</div>'; }
-}
-async function indexAllBucket() {
-  const el = document.getElementById('bucketList');
-  const btn = document.getElementById('indexAllBtn');
-  const prog = document.getElementById('bucketProgress');
-  const bar = document.getElementById('bucketProgressBar');
-  const msg = document.getElementById('bucketProgressMsg');
-  const result = document.getElementById('bucketResult');
-  btn.disabled = true;
-  prog.style.display = 'block';
-  result.style.display = 'none';
-  try {
-    const reply = await callEdgeFunction('bca-docs', { mode: 'list-docs' });
-    const raw = typeof reply === 'string' ? JSON.parse(reply) : reply;
-    const arq = (raw.arquivos || []).filter(f => !f.indexado);
-    if (arq.length === 0) { result.innerHTML = 'Todos os arquivos já estão indexados.'; result.style.display = 'block'; result.style.background = '#eef5f0'; result.style.color = '#5a8a6a'; result.style.border = '1px solid #c0dac8'; prog.style.display = 'none'; btn.disabled = false; return; }
-    let ok = 0, fail = 0;
-    for (let i = 0; i < arq.length; i++) {
-      const f = arq[i];
-      msg.textContent = 'Indexando ' + f.nome + ' (' + (i + 1) + '/' + arq.length + ')...';
-      bar.style.width = ((i + 1) / arq.length * 100) + '%';
-      const s = loadSession();
-      const tok = s && s.token ? s.token : SUPABASE_ANON_KEY;
-      const url = SUPABASE_URL + '/storage/v1/object/public/documentos-bca/' + encodeURIComponent(f.nome);
-      const res = await fetch(url);
-      if (!res.ok) { fail++; continue; }
-      const blob = await res.blob();
-      const b64 = await new Promise(function(r) { const reader = new FileReader(); reader.onload = function() { r(reader.result.split(',')[1]); }; reader.readAsDataURL(blob); });
-      try {
-        await callEdgeFunction('bca-embed', { nome_arquivo: f.nome, base64: b64, tipo: 'documento' });
-        ok++;
-      } catch(e) { fail++; }
-    }
-    result.innerHTML = ok + ' arquivo(s) indexado(s)' + (fail > 0 ? ' · ' + fail + ' com erro' : '');
-    result.style.display = 'block';
-    result.style.background = fail > 0 ? '#fdf0f0' : '#eef5f0';
-    result.style.color = fail > 0 ? '#b05a5a' : '#5a8a6a';
-    result.style.border = fail > 0 ? '1px solid #f0c0c0' : '1px solid #c0dac8';
-    setTimeout(loadBucketFiles, 1500);
-  } catch(err) {
-    result.innerHTML = 'Erro: ' + err.message;
-    result.style.display = 'block';
-    result.style.background = '#fdf0f0';
-    result.style.color = '#b05a5a';
-    result.style.border = '1px solid #f0c0c0';
-  } finally {
-    prog.style.display = 'none';
-    btn.disabled = false;
-  }
-}
+// ── COMPARADOR ───────────────────────────────────────────────────
+var currentMode = 'upload';
+window._lastAnalysisText = '';
 
-// ── PREPARAR PAYLOAD (PDF/DOCX) ───────────────────────────────────
-async function prepararPayload(file) {
-  return new Promise(function(resolve, reject) {
-    const reader = new FileReader();
-    reader.onload = function() {
-      const b64 = reader.result.split(',')[1];
-      if (/\.(pdf|doc|docx)$/i.test(file.name)) {
-        resolve({ base64: b64 });
-      } else {
-        const txt = atob(b64);
-        resolve({ texto: txt });
+function setMode(mode) {
+  currentMode = mode;
+  var u = mode === 'upload';
+  document.getElementById('btnUpload').style.background = u ? 'var(--black)' : 'var(--email-light)';
+  document.getElementById('btnUpload').style.color      = u ? 'var(--fendi-light)' : 'var(--email-dark)';
+  document.getElementById('btnText').style.background   = u ? 'var(--email-light)' : 'var(--black)';
+  document.getElementById('btnText').style.color        = u ? 'var(--email-dark)' : 'var(--fendi-light)';
+  document.getElementById('areaUpload').style.display   = u ? 'block' : 'none';
+  document.getElementById('areaText').style.display     = u ? 'none' : 'flex';
+  if (!u) document.getElementById('manualText').focus();
+  checkReady();
+}
+function onManualInput() {
+  var v = document.getElementById('manualText').value;
+  document.getElementById('charCount').textContent = v.length.toLocaleString('pt-BR') + ' caracteres';
+  checkReady();
+}
+function checkReady() {
+  var ok = currentMode === 'upload' ? !!window._contractFile : document.getElementById('manualText').value.trim().length > 20;
+  var btn = document.getElementById('analyzeBtn');
+  btn.disabled = !ok; btn.style.opacity = ok ? '1' : '0.3'; btn.style.cursor = ok ? 'pointer' : 'not-allowed';
+}
+function handleFile(input) {
+  var f = input.files[0]; if (!f) return;
+  window._contractFile = f;
+  document.getElementById('fileName').textContent = f.name;
+  document.getElementById('fileSize').textContent = (f.size / 1024).toFixed(1) + ' KB';
+  document.getElementById('fileCard').style.display = 'flex';
+  checkReady();
+}
+var uz = document.getElementById('uploadZone');
+uz.addEventListener('dragover', function(e) { e.preventDefault(); uz.style.borderColor = 'var(--fendi)'; uz.style.background = 'var(--fendi-dim)'; });
+uz.addEventListener('dragleave', function() { uz.style.borderColor = ''; uz.style.background = ''; });
+uz.addEventListener('drop', function(e) {
+  e.preventDefault(); uz.style.borderColor = ''; uz.style.background = '';
+  var f = e.dataTransfer.files[0]; if (!f) return;
+  window._contractFile = f;
+  document.getElementById('fileName').textContent = f.name;
+  document.getElementById('fileSize').textContent = (f.size / 1024).toFixed(1) + ' KB';
+  document.getElementById('fileCard').style.display = 'flex';
+  checkReady();
+});
+
+async function extractText(file) {
+  if (/\.txt$/i.test(file.name)) {
+    return new Promise(function(res, rej) {
+      var r = new FileReader(); r.onload = function(e) { res(e.target.result); }; r.onerror = rej; r.readAsText(file, 'UTF-8');
+    });
+  }
+  if (/\.pdf$/i.test(file.name)) {
+    // usa pdfjsLib se disponivel, senao envia base64 para a Edge Function extrair
+    if (typeof pdfjsLib !== 'undefined') {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      var ab = await file.arrayBuffer();
+      var pdf = await pdfjsLib.getDocument({ data: ab }).promise;
+      var pages = [];
+      for (var i = 1; i <= pdf.numPages; i++) {
+        var page = await pdf.getPage(i);
+        var content = await page.getTextContent();
+        pages.push(content.items.map(function(item) { return item.str; }).join(' '));
       }
-    };
-    reader.onerror = function() { reject(new Error('Erro ao ler arquivo')); };
-    reader.readAsDataURL(file);
+      return pages.join('\n\n');
+    }
+  }
+  if (/\.(doc|docx)$/i.test(file.name)) {
+    var ab2 = await file.arrayBuffer();
+    var raw = new Uint8Array(ab2).reduce(function(s, b) { return s + String.fromCharCode(b); }, '');
+    var start = raw.indexOf('<w:body');
+    var end = raw.indexOf('</w:body>');
+    if (start === -1) return raw.replace(/[^\x20-\x7E\xA0-\xFF\n]/g, ' ').replace(/\s{3,}/g, ' ').trim();
+    return raw.slice(start, end + 9)
+      .replace(/<w:br[^>]*>/g, '\n').replace(/<w:p[ >]/g, '\n')
+      .replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+      .replace(/\n{3,}/g, '\n\n').trim();
+  }
+  return '';
+}
+
+// Converte arquivo para base64 (para envio ao servidor)
+function fileToBase64(file) {
+  return new Promise(function(res, rej) {
+    var r = new FileReader();
+    r.onload = function(e) { res(e.target.result.split(',')[1]); };
+    r.onerror = rej;
+    r.readAsDataURL(file);
   });
 }
-function openFileDialog() {
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = '.txt,.pdf,.doc,.docx';
-  input.multiple = true;
-  input.onchange = function(e) {
-    if (e.target.files && e.target.files.length > 0) addToQueue(e.target.files);
+
+// Decide o payload correto por tipo de arquivo:
+// DOCX → base64 (extração pelo servidor via mammoth)
+// PDF  → base64 (extração pelo servidor via Gemini Vision)
+// TXT  → texto plano
+async function prepararPayload(file) {
+  var nome = file.name;
+  if (/\.(doc|docx)$/i.test(nome)) {
+    var b64 = await fileToBase64(file);
+    return { base64: b64 };
+  }
+  if (/\.pdf$/i.test(nome)) {
+    // tenta extração local via pdf.js primeiro (mais rápido e sem custo de API)
+    if (typeof pdfjsLib !== 'undefined') {
+      try {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        var ab = await file.arrayBuffer();
+        var pdf = await pdfjsLib.getDocument({ data: ab }).promise;
+        var pages = [];
+        for (var i = 1; i <= pdf.numPages; i++) {
+          var page = await pdf.getPage(i);
+          var ct = await page.getTextContent();
+          pages.push(ct.items.map(function(item) { return item.str; }).join(' '));
+        }
+        var texto = pages.join('\n\n').trim();
+        if (texto.length > 100) return { texto: texto };
+      } catch(_) {}
+    }
+    // fallback: envia base64 para o servidor extrair via Gemini
+    var b64pdf = await fileToBase64(file);
+    return { base64: b64pdf };
+  }
+  // TXT e outros
+  var texto = await extractText(file);
+  return { texto: texto };
+}
+
+async function analyzeContract() {
+  var rp = document.getElementById('resultPlaceholder');
+  var ld = document.getElementById('loadingResult');
+  var ar = document.getElementById('analysisResult');
+  var ldMsg = document.getElementById('loadingMsg');
+  rp.style.display = 'none'; ar.style.display = 'none'; ld.style.display = 'flex';
+  try {
+    var ct = '';
+    if (currentMode === 'text') {
+      ct = document.getElementById('manualText').value.trim();
+    } else {
+      var f = window._contractFile; if (!f) throw new Error('Nenhum arquivo selecionado.');
+      if (ldMsg) ldMsg.textContent = 'Extraindo texto...';
+      ct = await extractText(f);
+    }
+    ct = (ct || '').trim();
+    if (ct.length < 20) throw new Error('Texto muito curto ou ilegivel.');
+    if (ldMsg) ldMsg.textContent = 'Buscando clausulas similares na base BCA...';
+    var reply = await callEdgeFunction('bca-docs', {
+      message: 'TEXTO FORNECIDO PARA COMPARACAO:\n"""\n' + ct.slice(0, 6000) + '\n"""',
+      mode: 'comparador'
+    });
+    window._lastAnalysisText = reply || '';
+    ld.style.display = 'none'; ar.style.display = 'flex';
+    var isErr = !reply || reply.length < 30;
+    document.getElementById('aiAnalysis').innerHTML = isErr
+      ? '<span style="color:#b05a5a;">Sem resposta. Verifique a base de documentos.</span>'
+      : fmt(reply);
+    document.getElementById('compDebugPanel').textContent = 'STATUS: ' + window._lastStatus + '\n\n' + (window._lastRawResponse || '');
+  } catch(err) {
+    ld.style.display = 'none'; ar.style.display = 'flex';
+    document.getElementById('aiAnalysis').innerHTML = '<span style="color:#b05a5a;">' + err.message + '</span>';
+    document.getElementById('compDebugPanel').textContent = 'ERRO: ' + err.message + '\n\n' + (window._lastRawResponse || '');
+    document.getElementById('compDebugPanel').style.display = 'block';
+  }
+}
+function toggleCompDebug() {
+  var p = document.getElementById('compDebugPanel');
+  p.style.display = p.style.display === 'none' ? 'block' : 'none';
+}
+function exportarDocx() {
+  var texto = window._lastAnalysisText;
+  if (!texto || texto.length < 10) { alert('Nenhum resultado disponivel para exportar.'); return; }
+  var agora = new Date();
+  var ds = agora.toLocaleDateString('pt-BR');
+  var rtfL = texto.split('\n').map(function(l) {
+    l = l.replace(/[\\{}]/g, function(m) { return '\\' + m; });
+    l = l.replace(/\*\*(.*?)\*\*/g, '{\\b $1}');
+    return l + '\\par';
+  }).join('\n');
+  var rtf = '{\\rtf1\\ansi\\deff0\n{\\fonttbl{\\f0 Arial;}}\n{\\f0\\fs22\n{\\b\\fs28 Analise Comparativa BCA}\\par\n{\\fs18 Data: ' + ds + '}\\par\\par\n' + rtfL + '\n}}';
+  var blob = new Blob([rtf], { type: 'application/rtf' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a'); a.href = url; a.download = 'BCA_Comparacao_' + ds.replace(/\//g, '-') + '.doc';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+// ── DOCUMENTOS ────────────────────────────────────────────────────
+var _bucketFiles = [];
+
+async function loadBucketFiles() {
+  var listEl = document.getElementById('bucketList');
+  var resultEl = document.getElementById('bucketResult');
+  if (!listEl) return;
+  if (resultEl) resultEl.style.display = 'none';
+  listEl.innerHTML = '<div style="font-size:0.75rem;color:var(--email-dark);">Consultando base...</div>';
+  try {
+    var s = loadSession();
+    var tok = s && s.token ? s.token : SUPABASE_ANON_KEY;
+
+    // FONTE PRIMÁRIA: tabela documentos (sempre disponível)
+    var tR = await fetch(SUPABASE_URL + '/rest/v1/documentos?select=nome_arquivo,id&order=nome_arquivo.asc&limit=500', {
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + tok }
+    });
+    var tRawText = await tR.text();
+    window._docQueryDebug = 'HTTP ' + tR.status + ' | tok_type=' + (tok === SUPABASE_ANON_KEY ? 'ANON' : 'USER') + ' | resp=' + tRawText.slice(0,300);
+    var tRows = [];
+    try { tRows = JSON.parse(tRawText); } catch(_) {}
+    var chk = {}, docIds = {};
+    if (Array.isArray(tRows)) tRows.forEach(function(r) {
+      if (r.nome_arquivo) {
+        chk[r.nome_arquivo] = (chk[r.nome_arquivo] || 0) + 1;
+        docIds[r.nome_arquivo] = r.id;
+      }
+    });
+    var idxd = Object.keys(chk);
+
+    // FONTE SECUNDÁRIA: bucket (complementar — fornece tamanho KB)
+    var bMap = {};
+    try {
+      var bR = await fetch(SUPABASE_URL + '/storage/v1/object/list/documentos-bca', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
+        body: JSON.stringify({ limit: 200, offset: 0, sortBy: { column: 'name', order: 'asc' } })
+      });
+      var bFiles = bR.ok ? await bR.json() : [];
+      if (Array.isArray(bFiles)) bFiles.filter(function(f) { return f.name && /\.(pdf|doc|docx|txt)$/i.test(f.name); })
+        .forEach(function(f) { bMap[f.name] = f.metadata && f.metadata.size ? Math.round(f.metadata.size / 1024) : null; });
+    } catch(_) {} // bucket indisponível não bloqueia a listagem
+
+    var bKeys = Object.keys(bMap);
+
+    // MERGE: documentos do banco + arquivos do bucket sem indexação
+    var todos = Array.from(new Set(idxd.concat(bKeys))).sort();
+    _bucketFiles = todos.map(function(nome) { return { name: nome, indexado: idxd.indexOf(nome) >= 0, chunks: chk[nome] || 0 }; });
+
+    var debugInfo = '<div style="font-size:0.65rem;color:#888;margin-top:0.5rem;padding:0.4rem 0.5rem;background:#111;border-radius:4px;font-family:monospace;white-space:pre-wrap;word-break:break-all;">' + (window._docQueryDebug||'') + '</div>';
+    if (todos.length === 0) {
+      listEl.innerHTML = '<div style="font-size:0.75rem;color:var(--email-dark);">Nenhum documento encontrado.</div>' + debugInfo;
+      return;
+    }
+
+    var ti = idxd.length, ta = todos.length;
+    var cs = ti === ta ? '#c0dac8' : '#f0d080', bs = ti === ta ? '#eef5f0' : '#fff8e6', ts = ti === ta ? '#5a8a6a' : '#8a7020';
+    listEl.innerHTML = '<div style="font-size:0.72rem;padding:0.4rem 0.5rem;border-radius:6px;background:' + bs + ';border:1px solid ' + cs + ';color:' + ts + ';margin-bottom:0.35rem;">' + ti + '/' + ta + ' documentos indexados na RAG</div>' +
+      todos.map(function(nome) {
+        var idx = idxd.indexOf(nome) >= 0, ch = chk[nome] || 0, kb = bMap[nome], inB = bKeys.indexOf(nome) >= 0;
+        var ico = /\.pdf$/i.test(nome) ? '📄' : /\.(doc|docx)$/i.test(nome) ? '📝' : '📃';
+        var ns = nome.replace(/'/g, "\\'");
+        var tagBucket = inB
+          ? '<span title="Arquivo disponível no bucket" style="font-size:0.6rem;color:#5a8a6a;">☁</span>'
+          : '<span title="Arquivo não está no bucket" style="font-size:0.6rem;color:var(--email-dark);">○</span>';
+        return '<div style="display:flex;align-items:center;gap:0.6rem;padding:0.45rem 0.6rem;background:var(--email-light);border-radius:6px;border:1px solid ' + (idx ? '#c0dac8' : 'var(--fendi-border)') + ';">' +
+          '<span style="font-size:0.85rem;">' + ico + '</span>' +
+          '<span style="font-size:0.74rem;color:var(--dark-gray);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + nome + '">' + nome + '</span>' +
+          tagBucket +
+          (kb ? '<span style="font-size:0.62rem;color:var(--email-dark);">' + kb + 'KB</span>' : '') +
+          (idx
+            ? '<span style="padding:0.2rem 0.55rem;background:#eef5f0;border:1px solid #c0dac8;border-radius:5px;font-size:0.6rem;font-family:Montserrat,sans-serif;font-weight:700;color:#5a8a6a;white-space:nowrap;">' + ch + ' chunk' + (ch !== 1 ? 's' : '') + '</span>'
+            : '<button onclick="indexFile(\'' + ns + '\',this)" style="padding:0.2rem 0.55rem;background:var(--fendi-dim);border:1px solid var(--fendi-border);border-radius:5px;font-size:0.62rem;font-family:Montserrat,sans-serif;font-weight:700;color:var(--fendi);cursor:pointer;white-space:nowrap;">Indexar</button>') +
+          '<button onclick="substituirDocumento(\'' + ns + '\')" title="Substituir arquivo" style="padding:0.2rem 0.45rem;background:none;border:1px solid var(--fendi-border);border-radius:5px;font-size:0.6rem;color:var(--email-dark);cursor:pointer;" onmouseover="this.style.borderColor=\'var(--fendi)\';this.style.color=\'var(--fendi)\'" onmouseout="this.style.borderColor=\'var(--fendi-border)\';this.style.color=\'var(--email-dark)\'">↺</button>' +
+          '<button onclick="apagarDocumento(\'' + ns + '\',this.parentElement)" title="Apagar documento" style="padding:0.2rem 0.45rem;background:none;border:1px solid #f0c0c0;border-radius:5px;font-size:0.6rem;color:#b05a5a;cursor:pointer;" onmouseover="this.style.background=\'#fdf0f0\'" onmouseout="this.style.background=\'none\'">✕</button>' +
+          '</div>';
+      }).join('');
+  } catch(e) {
+    listEl.innerHTML = '<div style="font-size:0.75rem;color:#b05a5a;">Erro ao listar: ' + e.message + '</div>' +
+      '<div style="font-size:0.65rem;color:#888;margin-top:0.4rem;font-family:monospace;">Stack: ' + (e.stack||'').slice(0,200) + '</div>';
+  }
+}
+
+async function reindexFile(filename, btn) {
+  if (!confirm('Reindexar "' + filename + '"?')) return;
+  if (btn) { btn.textContent = '...'; btn.disabled = true; }
+  try {
+    var s = loadSession();
+    await fetch(SUPABASE_URL + '/rest/v1/documentos?nome_arquivo=eq.' + encodeURIComponent(filename), {
+      method: 'DELETE', headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + (s && s.token ? s.token : SUPABASE_ANON_KEY), 'Prefer': 'return=minimal' }
+    });
+  } catch(e) {}
+  var r = await indexFile(filename, { textContent: '', disabled: false, style: {}, title: '' });
+  if (r && r.ok) setTimeout(loadBucketFiles, 800);
+  else if (btn) { btn.textContent = '✗'; btn.disabled = false; }
+}
+
+async function indexFile(filename, btn) {
+  if (btn && btn.textContent !== undefined) { btn.textContent = '...'; btn.disabled = true; }
+  try {
+    var s2 = loadSession(); var tok2 = s2 && s2.token ? s2.token : SUPABASE_ANON_KEY;
+    var res = await fetch(SUPABASE_URL + '/storage/v1/object/documentos-bca/' + encodeURIComponent(filename), {
+      headers: { 'apikey': SUPABASE_ANON_KEY }
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    var blob = await res.blob();
+    var file = new File([blob], filename, { type: blob.type });
+    var payload = await prepararPayload(file);
+    if (payload.texto && payload.texto.length < 30) throw new Error('Texto ilegivel');
+    await callEdgeFunction('bca-embed', Object.assign({ nome_arquivo: filename }, payload));
+    if (btn && btn.textContent !== undefined) { btn.textContent = '✓'; if (btn.style) { btn.style.background = '#eef5f0'; btn.style.color = '#5a8a6a'; } }
+    return { ok: true };
+  } catch(e) {
+    if (btn && btn.textContent !== undefined) { btn.textContent = '✗'; if (btn.style) { btn.style.background = '#fdf0f0'; btn.style.color = '#b05a5a'; } btn.disabled = false; btn.title = e.message; }
+    return { ok: false, erro: e.message };
+  }
+}
+
+async function indexAllBucket() {
+  var ni = _bucketFiles.filter(function(f) { return !f.indexado; });
+  if (ni.length === 0) { alert('Todos ja indexados.'); return; }
+  var btn = document.getElementById('indexAllBtn'), pr = document.getElementById('bucketProgress');
+  var bar = document.getElementById('bucketProgressBar'), msg = document.getElementById('bucketProgressMsg');
+  var res = document.getElementById('bucketResult');
+  btn.disabled = true; btn.textContent = 'Indexando...'; pr.style.display = 'block'; res.style.display = 'none';
+  var ok = 0, fail = 0, fl = [];
+  for (var i = 0; i < ni.length; i++) {
+    var f = ni[i]; msg.textContent = (i + 1) + '/' + ni.length + ': ' + f.name;
+    bar.style.width = Math.round((i / ni.length) * 100) + '%';
+    var r = await indexFile(f.name, null);
+    if (r.ok) ok++; else { fail++; fl.push(f.name); }
+    if (i < ni.length - 1) await new Promise(function(resolve) { setTimeout(resolve, 1500); });
+  }
+  bar.style.width = '100%'; msg.textContent = 'Concluido!'; res.style.display = 'block';
+  if (fail === 0) {
+    res.style.cssText = 'display:block;background:#eef5f0;border:1px solid #c0dac8;color:#5a8a6a;padding:0.65rem 0.9rem;border-radius:8px;font-size:0.75rem;';
+    res.innerHTML = ok + ' documento(s) indexado(s) com sucesso!';
+  } else {
+    res.style.cssText = 'display:block;background:#fff8e6;border:1px solid #f0d080;color:#8a7020;padding:0.65rem 0.9rem;border-radius:8px;font-size:0.75rem;';
+    res.innerHTML = ok + ' ok · ' + fail + ' erro(s):<br>' + fl.map(function(n) { return '• ' + n; }).join('<br>');
+  }
+  btn.disabled = false; btn.textContent = 'Indexar nao indexados';
+  setTimeout(loadBucketFiles, 1000);
+}
+
+// ── GESTÃO DE DOCUMENTOS ─────────────────────────────────────────
+
+async function apagarDocumento(filename, rowEl) {
+  if (!confirm('Apagar "' + filename + '" da base e do bucket?\nEsta ação não pode ser desfeita.')) return;
+  if (rowEl) rowEl.style.opacity = '0.4';
+  var s = loadSession(); var tok = s && s.token ? s.token : SUPABASE_ANON_KEY;
+  var erros = [];
+  // 1. Remove chunks e registro do banco
+  try {
+    await fetch(SUPABASE_URL + '/rest/v1/documentos?nome_arquivo=eq.' + encodeURIComponent(filename), {
+      method: 'DELETE', headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + tok, 'Prefer': 'return=minimal' }
+    });
+  } catch(e) { erros.push('banco: ' + e.message); }
+  // 2. Remove arquivo do bucket
+  try {
+    var delRes = await fetch(SUPABASE_URL + '/storage/v1/object/documentos-bca/' + encodeURIComponent(filename), {
+      method: 'DELETE', headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + tok }
+    });
+    if (!delRes.ok) erros.push('bucket: HTTP ' + delRes.status);
+  } catch(e) { erros.push('bucket: ' + e.message); }
+  if (erros.length > 0) { alert('Apagado com avisos:\n' + erros.join('\n')); }
+  setTimeout(loadBucketFiles, 500);
+}
+
+function substituirDocumento(filename) {
+  var input = document.createElement('input');
+  input.type = 'file'; input.accept = '.pdf,.doc,.docx,.txt';
+  input.onchange = async function() {
+    var f = input.files[0]; if (!f) return;
+    var s = loadSession(); var tok = s && s.token ? s.token : SUPABASE_ANON_KEY;
+    var li = document.querySelector('[title="' + filename + '"]');
+    if (li) li.parentElement.style.opacity = '0.5';
+    try {
+      // 1. Remove chunks antigos do banco
+      await fetch(SUPABASE_URL + '/rest/v1/documentos?nome_arquivo=eq.' + encodeURIComponent(filename), {
+        method: 'DELETE', headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + tok, 'Prefer': 'return=minimal' }
+      });
+      // 2. Reindexar — base64 enviado para bca-embed que faz upload ao bucket
+      var ab = await f.arrayBuffer();
+      var b64 = await new Promise(function(res) {
+        var r = new FileReader(); r.onload = function(e) { res(e.target.result.split(',')[1]); }; r.readAsDataURL(f);
+      });
+      await callEdgeFunction('bca-embed', { nome_arquivo: filename, tipo: 'documento', base64: b64 });
+      setTimeout(loadBucketFiles, 800);
+    } catch(e) {
+      alert('Erro ao substituir: ' + e.message);
+      if (li) li.parentElement.style.opacity = '1';
+    }
   };
   input.click();
 }
@@ -555,6 +1024,7 @@ function initAuth() {
   showLogin();
 }
 
+// Inicializa apos carregamento completo do DOM
 window.addEventListener('load', function() { initAuth(); });
 </script>
 </body>
